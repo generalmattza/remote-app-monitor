@@ -1,19 +1,17 @@
-import sys
-import time
+import asyncio
 import zmq
-import threading
+import zmq.asyncio
 from tabulate import tabulate
-from text_formatter import format_text
-from banner import banner_metrics_manager as BANNER
 
 MAX_MONITOR_WIDTH = 40
 
 
-def format_list(items, format_options=None):
-    """Format a list of values as strings with optional formatting."""
-    if format_options:
-        return [format_text(str(item), **format_options) for item in items]
-    return [str(item) for item in items]
+def format_text(text, fg_color=None, bold=False):
+    """Example text formatting method to support colors and bold."""
+    # Here we would add real ANSI color codes, but for now just bold formatting
+    if bold:
+        text = f"\033[1m{text}\033[0m"
+    return text
 
 
 class MonitorElement:
@@ -28,10 +26,6 @@ class MonitorElement:
     def update(self, data):
         """Update element with data."""
         raise NotImplementedError("Subclasses must implement the update method")
-
-    def get_height(self):
-        """Return the height of the element in lines."""
-        raise NotImplementedError("Subclasses must implement the get_height method")
 
 
 class ProgressBar(MonitorElement):
@@ -185,7 +179,7 @@ class Table(MonitorElement):
 
 
 class MonitorManager:
-    """Main class to manage all monitor elements and updates using double buffering."""
+    """Main class to manage all monitor elements and updates asynchronously."""
 
     def __init__(self):
         self.elements = []  # Store elements as a list to maintain their order
@@ -218,32 +212,36 @@ class MonitorManager:
         self.clear_monitor()
 
         # Print the entire buffered content at once
-        sys.stdout.write("\n".join(self.buffer) + "\n")
-        sys.stdout.flush()
+        print("\n".join(self.buffer))
 
     def clear_monitor(self):
         """Clear the monitor screen."""
-        sys.stdout.write("\033[2J\033[H")  # Clear screen and move cursor to top left
-        sys.stdout.flush()
+        print("\033[2J\033[H")  # Clear screen and move cursor to top left
+
+    async def update_at_fixed_rate(self, interval=1):
+        """Asynchronously update the monitor at a fixed rate."""
+        while True:
+            self.display_all()  # Display the current metrics
+            await asyncio.sleep(interval)  # Wait for the next update cycle
 
 
 class ZeroMQUpdateManager:
-    """Class to manage updates via ZeroMQ PUB-SUB pattern."""
+    """Class to manage updates via ZeroMQ PUB-SUB pattern asynchronously."""
 
     def __init__(self, monitor_manager, host="localhost", port=5556):
         self.monitor_manager = monitor_manager
         self.host = host
         self.port = port
-        self.context = zmq.Context()
+        self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.SUB)  # Subscriber socket
         self.socket.connect(f"tcp://{self.host}:{self.port}")
         self.socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
 
-    def start_subscriber(self):
-        """Start the ZeroMQ subscriber."""
+    async def start_subscriber(self):
+        """Start the ZeroMQ subscriber asynchronously."""
         print(f"Subscribed to {self.host}:{self.port}")
         while True:
-            message = self.socket.recv_string()
+            message = await self.socket.recv_string()  # Non-blocking receive
             self.process_update(message)
 
     def process_update(self, message):
@@ -254,43 +252,37 @@ class ZeroMQUpdateManager:
             element_id = update_info[0]
             update_args = update_info[1:]
             self.monitor_manager.update(element_id, *update_args)
-            self.monitor_manager.display_all()
         except Exception as e:
-            print(f"Error processing update: {e}", file=sys.stderr)
+            print(f"Error processing update: {e}")
 
 
-# Example usage
-if __name__ == "__main__":
-    # Create a MonitorManager instance
+async def main():
+    # Create a MonitorManager instances
     manager = MonitorManager()
 
-    # Add elements with unique IDs
-    progress_bar = ProgressBar(
-        "progress_1",
-        total_steps=100,
-        width=40,
-        bar_format={"fg_color": "blue"},
-    )
+    # Add a progress bar and table elements with formatting
+    progress_bar1 = ProgressBar("progress_1", total_steps=100)
     table = Table(
         "table_1",
         headers=["1m", "1h", "24h"],
         variables=["Processed", "Errors"],
-        # header_format={"bold": True, "fg_color": "cyan"},
-        column_format={"bold": True, "fg_color": "red"},
-        cell_format={"fg_color": "white"},
+        data_column_width=6,
     )
 
-    manager.add_element(progress_bar)
+    manager.add_element(progress_bar1)
     manager.add_element(table)
-    manager.display_all()
 
-    # # Simulate some local updates
-    # for i in range(10):
-    #     manager.update("progress_1", i + 1)
-    #     manager.update("table_1", "Processed", "1m", i + 1)
-    #     manager.display_all()
-    #     time.sleep(0.5)
-
-    # Start ZeroMQ subscriber for remote updates
+    # Start ZeroMQ manager and subscriber
     zmq_manager = ZeroMQUpdateManager(manager)
-    threading.Thread(target=zmq_manager.start_subscriber).start()
+
+    # Create the task to update the monitor manager at a fixed rate
+    asyncio.create_task(
+        manager.update_at_fixed_rate(interval=1 / 30)
+    )  # Updates every 1 second
+
+    # Start the ZeroMQ subscriber (it will process updates asynchronously)
+    await zmq_manager.start_subscriber()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
