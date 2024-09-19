@@ -50,7 +50,7 @@ class ProgressBar(MonitorElement):
 
     def update(self, progress):
         """Update progress bar based on the current progress percentage."""
-        self.current_step = float(progress)
+        self.current_step = min(float(progress), self.total_steps)
         return self.display()
 
     def display(self):
