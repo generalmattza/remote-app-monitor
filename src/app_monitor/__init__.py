@@ -1,7 +1,7 @@
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 
 
-from .app_monitor2 import MonitorManager
+from .app_monitor import MonitorManager
 from .elements_base import (
     ProgressBar,
     Table,
@@ -10,4 +10,4 @@ from .elements_base import (
     LogMonitor,
     MonitorGroup,
 )
-from .server import ZeroMQUpdateServer
+from .server import ZeroMQUpdateServer, SerialUpdateServer
