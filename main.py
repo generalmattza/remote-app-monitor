@@ -22,6 +22,7 @@ from app_monitor import (
     RangeBar,
     TextElement,
     ZeroMQUpdateServer,
+    LogMonitor,
 )
 
 LOGGING_CONFIG_FILEPATH = "config/logging.yaml"
@@ -66,68 +67,36 @@ async def main():
 
     # Example instantiation of the RangeBar
     axis_properties = dict(
-        min_value=-100,
-        max_value=100,
-        width=50,  # Total width of the bar (e.g., 50 characters)
+        min_value=-150,
+        max_value=150,
+        # width=50,  # Total width of the bar (e.g., 50 characters)
         bar_format={"fg_color": "green"},  # Custom formatting for the bar (optional)
         text_format={"bold": True},  # Custom formatting for the display text (optional)
         max_label_length=12,  # Maximum length of the label (e.g., 5 characters)
         marker_trace="█",
         range_trace="-",
     )
-    x_axis_position = RangeBar(
-        element_id="x_pos", label="X-axis Pos", **axis_properties
+    axis_velocity = RangeBar(
+        element_id="velocity", label="Axis Vel", unit="m/s", **axis_properties
     )
-    x_axis_velocity = RangeBar(
-        element_id="x_vel", label="X-axis Vel", **axis_properties
-    )
-    x_axis_acceleration = RangeBar(
-        element_id="x_acc", label="X-axis Acc", **axis_properties
-    )
-    y_axis_position = RangeBar(
-        element_id="y_pos", label="Y-axis Pos", **axis_properties
-    )
-    y_axis_velocity = RangeBar(
-        element_id="y_vel", label="Y-axis Vel", **axis_properties
-    )
-    y_axis_acceleration = RangeBar(
-        element_id="y_acc", label="Y-axis Acc", **axis_properties
-    )
-    z0_axis_position = RangeBar(
-        element_id="z0_pos", label="Z0-axis Pos", **axis_properties
-    )
-    z0_axis_velocity = RangeBar(
-        element_id="z0_vel", label="Z0-axis Vel", **axis_properties
-    )
-    z0_axis_acceleration = RangeBar(
-        element_id="z0_acc", label="Z0-axis Acc", **axis_properties
-    )
-    z1_axis_position = RangeBar(
-        element_id="z1_pos", label="Z1-axis Pos", **axis_properties
-    )
-    z1_axis_velocity = RangeBar(
-        element_id="z1_vel", label="Z1-axis Vel", **axis_properties
-    )
-    z1_axis_acceleration = RangeBar(
-        element_id="z1_acc", label="Z1-axis Acc", **axis_properties
+    axis_torque = RangeBar(
+        element_id="torque", label="Axis Torque", unit="Nm", **axis_properties
     )
 
-    elements = [
-        x_axis_position,
-        x_axis_velocity,
-        x_axis_acceleration,
-        y_axis_position,
-        y_axis_velocity,
-        y_axis_acceleration,
-        z0_axis_position,
-        z0_axis_velocity,
-        z0_axis_acceleration,
-        z1_axis_position,
-        z1_axis_velocity,
-        z1_axis_acceleration,
-    ]
+    logger = LogMonitor(
+        element_id="logger",
+        timestamp=True,
+        timestamp_format="%H:%M:%S.%f",
+        timestamp_significant_digits=3,
+        border=True,
+    )
 
-    [manager.add_element(el) for el in elements]
+    axis_group = [axis_velocity, axis_torque]
+    manager.add_element_group("X", axis_group)
+    manager.add_element_group("Y", axis_group)
+    manager.add_element_group("Z", axis_group)
+
+    manager.add_element(logger)
 
     # Start ZeroMQ manager and subscriber
     zmq_server = ZeroMQUpdateServer(manager)
