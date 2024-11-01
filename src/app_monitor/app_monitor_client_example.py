@@ -24,19 +24,25 @@ class ZMQClient:
 
     def run(self):
         """Send generated data over the ZeroMQ socket."""
-        progress = gen_sine(amplitude=50, frequency=0.1, offset=50)
-        processed = iter(range(10000))
+        progress = gen_sine(amplitude=150, frequency=0.1, offset=50)
+        # processed = iter(range(10000))
 
         try:
             while True:
                 var = next(progress)
-                self.socket.send_string(f"temp_range {var}")
+                self.socket.send_string(f"X.velocity {var}")
+                self.socket.send_string(f"X.torque {-var}")
+                self.socket.send_string(f"Y.velocity {-var}")
+                self.socket.send_string(f"Y.torque {var}")
+
+                self.socket.send_string(f"logger {var=}")
+
                 print(f"temp_range={var}")
 
-                processed_val = next(processed)
-                self.socket.send_string(f"table_1 Processed 1m {processed_val}")
+                # processed_val = next(processed)
+                # self.socket.send_string(f"table_1 Processed 1m {processed_val}")
 
-                time.sleep(1 / 120)
+                time.sleep(1 / 20)
         except KeyboardInterrupt:
             print("ZMQ Client stopped.")
         finally:

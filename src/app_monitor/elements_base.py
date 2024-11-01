@@ -1,7 +1,8 @@
+from datetime import datetime
 from tabulate import tabulate
 
 
-MAX_MONITOR_WIDTH = 40
+MAX_MONITOR_WIDTH = 60
 
 from app_monitor.text_formatter import format_text
 
@@ -18,10 +19,11 @@ class MonitorElement:
 
     id_generator = id_generator("element")
 
-    def __init__(self, element_id=None):
+    def __init__(self, element_id=None, border=False):
         self.element_id = (
             element_id or self.get_unique_id()
         )  # Assign a unique ID to each element
+        self.border = border
 
     def display(self):
         raise NotImplementedError("Subclasses must implement the display method")
@@ -30,9 +32,72 @@ class MonitorElement:
         """Update element with data."""
         raise NotImplementedError("Subclasses must implement the update method")
 
+    def add_border(self, content):
+        """Wrap content in a simple border if self.border is True."""
+        if not self.border:
+            return content
+        lines = content.split("\n")
+        width = max(len(line) for line in lines) + 4
+        border_top = "+" + "-" * (width - 2) + "+"
+        bordered_content = [f"| {line.ljust(width - 4)} |" for line in lines]
+        border_bottom = border_top
+        return "\n".join([border_top] + bordered_content + [border_bottom])
+
     def get_unique_id(self):
         """Generate a unique ID for monitor elements."""
         return next(self.id_generator)
+
+
+class MonitorGroup(MonitorElement):
+    """Class to group monitor elements with a border and hierarchical IDs."""
+
+    id_generator = id_generator("group")
+
+    def __init__(self, group_id, elements=None, border=False, width=MAX_MONITOR_WIDTH):
+        super().__init__(element_id=group_id, border=border)
+        self.group_id = group_id
+        self.elements = elements or {}
+        self.width = width
+
+        # Initialize elements with hierarchical IDs
+        for full_element_id, element in self.elements.items():
+            element.element_id = full_element_id
+
+    def add_element(self, element_name, element):
+        """Add an element to the group with hierarchical ID format."""
+        element.element_id = f"{self.group_id}.{element_name}"
+        self.elements[element.element_id] = element
+
+    def update_element(self, full_element_id, *args, **kwargs):
+        """Update a specific element in the group by its full ID."""
+        if full_element_id in self.elements:
+            self.elements[full_element_id].update(*args, **kwargs)
+
+    def display(self):
+        """Display the group with a border and all elements inside it."""
+        element_displays = "\n".join(
+            element.display() for element in self.elements.values()
+        )
+        return self.add_border(element_displays)
+
+    def add_border(self, content):
+        """Wrap the content of the group in a border with a group ID as a header."""
+        if not self.border:
+            return content
+        lines = content.split("\n")
+        header_text = f" {self.group_id} "
+        header_line = f"+{header_text.ljust(self.width - 2, '-')}+"
+        border_top = "+" + "-" * (self.width - 2) + "+"
+        bordered_content = [f"| {line.ljust(self.width - 4)} |" for line in lines]
+        border_bottom = border_top
+        return "\n".join([header_line] + bordered_content + [border_bottom])
+
+    def get_height(self):
+        """Calculate total height including border and contained elements."""
+        element_heights = sum(
+            element.get_height() for element in self.elements.values()
+        )
+        return element_heights + 2 if self.border else element_heights
 
 
 class TextElement(MonitorElement):
@@ -51,11 +116,12 @@ class TextElement(MonitorElement):
 
     def display(self):
         """Generate the text element for display."""
-        return (
+        content = (
             format_text(self.text, **self.text_format)
             if self.text_format
             else self.text
         )
+        return self.add_border(content)
 
     def get_height(self):
         """Calculate the number of lines the text element occupies."""
@@ -103,12 +169,6 @@ class ProgressBar(MonitorElement):
     def display(self):
         """Generate the progress bar for display."""
         progress_percentage = self.current_step / self.total_steps
-        bar_width = self.width - 10
-        filled_length = int(bar_width * progress_percentage)
-        bar = "█" * filled_length + "░" * (bar_width - filled_length)
-
-        # Format the progress bar and the percentage text if formats are provided
-        formatted_bar = format_text(bar, **self.bar_format) if self.bar_format else bar
         if self.display_value is None:
             display_value = (
                 format_text(f"{progress_percentage * 100:.1f}%", **self.text_format)
@@ -117,6 +177,12 @@ class ProgressBar(MonitorElement):
             )
         else:
             display_value = self.display_value
+        bar_width = self.width - self.max_label_length - len(display_value) - 6
+        filled_length = int(bar_width * progress_percentage)
+        bar = "█" * filled_length + "░" * (bar_width - filled_length)
+
+        # Format the progress bar and the percentage text if formats are provided
+        formatted_bar = format_text(bar, **self.bar_format) if self.bar_format else bar
 
         padded_label = self.label.ljust(self.max_label_length)
 
@@ -143,8 +209,10 @@ class RangeBar(MonitorElement):
         text_format=None,
         display_value=None,
         max_label_length=None,
+        max_display_length=None,
         marker_trace="|",
         range_trace="-",
+        unit=None,
     ):
         super().__init__(element_id)
         self.min_value = min_value
@@ -154,8 +222,11 @@ class RangeBar(MonitorElement):
         self.label = label
         self.display_value = display_value
         self.max_label_length = max_label_length or 10
+        self.max_display_length = max_display_length or 7
         self.marker_trace = marker_trace
         self.range_trace = range_trace
+        self.unit = unit or ""  # Add unit parameter for display
+        self.max_unit_length = max(len(self.unit), 4)
 
         # Store formatting options for the bar itself and the text
         self.bar_format = bar_format
@@ -174,8 +245,25 @@ class RangeBar(MonitorElement):
         progress_ratio = (self.current_value - self.min_value) / (
             self.max_value - self.min_value
         )
-        bar_width = self.width - 10
-        marker_position = int(bar_width * progress_ratio)
+
+        # Format the numeric value to ensure decimal alignment, right-justified with two decimal places
+        numeric_value = f"{self.current_value:>{self.max_display_length}.2f}"
+
+        # Combine the numeric value with the unit, ensuring unit is left-justified
+        full_display_value = f"{numeric_value} {self.unit}".ljust(
+            self.max_display_length + self.max_unit_length
+        )
+
+        # Apply text formatting if specified
+        display_value = (
+            format_text(full_display_value, **self.text_format)
+            if self.text_format
+            else full_display_value
+        )
+
+        # Calculate bar width and position of the marker
+        bar_width = self.width - self.max_label_length - self.max_display_length - 12
+        marker_position = min(int(bar_width * progress_ratio), bar_width - 1)
 
         # Create the bar with a marker at the current position
         bar = (
@@ -186,15 +274,6 @@ class RangeBar(MonitorElement):
 
         # Format the range bar and the current value if formats are provided
         formatted_bar = format_text(bar, **self.bar_format) if self.bar_format else bar
-        display_value = (
-            (
-                format_text(f"{self.current_value}", **self.text_format)
-                if self.text_format
-                else f"{self.current_value}"
-            )
-            if self.display_value is None
-            else self.display_value
-        )
 
         padded_label = self.label.ljust(self.max_label_length)
 
@@ -308,3 +387,72 @@ class Table(MonitorElement):
     def get_height(self):
         """Calculate the number of lines the table occupies."""
         return len(self.variables) + 2  # Number of rows + 2 for the header and border
+
+
+class LogMonitor(MonitorElement):
+    """Class for rendering a log monitor element."""
+
+    id_generator = id_generator("log")
+
+    def __init__(
+        self,
+        element_id=None,
+        max_logs=10,
+        log_format=None,
+        timestamp=False,
+        timestamp_format="%Y-%m-%d %H:%M:%S.%f",
+        timestamp_significant_digits=7,
+        border=False,
+        width=MAX_MONITOR_WIDTH,
+        header="Log Monitor",
+    ):
+        super().__init__(element_id, border=border)
+        self.max_logs = max_logs
+        self.logs = []
+        self.log_format = log_format
+        self.timestamp = timestamp
+        self.timestamp_format = timestamp_format
+        self.timestamp_significant_digits = timestamp_significant_digits
+        self.width = width
+        self.header = header
+
+    def update(self, log):
+        """Update the log monitor with a new log entry."""
+        if self.timestamp:
+            log = f"{datetime.now().strftime(self.timestamp_format)[:-self.timestamp_significant_digits]}  {log}"
+        self.logs.append(log)
+        if len(self.logs) > self.max_logs:
+            self.logs.pop(0)
+
+    def format_log_entry(self, log):
+        """Truncate or pad log entries to fit within the fixed border width."""
+        log = log[: self.width - 4] if len(log) > self.width - 4 else log
+        return log.ljust(self.width - 4)  # Ensure all lines match the width
+
+    def display(self):
+        """Generate the log monitor with a fixed-width border and padded content to max_logs height."""
+        # Format log entries and pad with empty lines up to max_logs
+        formatted_logs = [self.format_log_entry(log) for log in self.logs]
+        while len(formatted_logs) < self.max_logs:
+            formatted_logs.append(" " * (self.width - 4))  # Pad with empty lines
+        content = "\n".join(
+            formatted_logs[: self.max_logs]
+        )  # Limit display to max_logs
+        return self.add_border(content)
+
+    def get_height(self):
+        """Calculate the number of lines the log monitor occupies."""
+        return len(self.logs) + 2 if self.border else len(self.logs)
+
+    def add_border(self, content):
+        """Wrap content in a fixed-width border with a left-justified header."""
+        if not self.border:
+            return content
+        lines = content.split("\n")
+        header_text = (
+            f"- {self.header} "  # Left-justified with one space before the header
+        )
+        header_line = f"+{header_text.ljust(self.width - 2, '-')}+"
+        bordered_content = [f"| {line} |" for line in lines]
+        border_bottom = "+" + "-" * (self.width - 2) + "+"
+        return "\n".join([header_line] + bordered_content + [border_bottom])

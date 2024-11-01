@@ -1,7 +1,13 @@
 import asyncio
+from copy import deepcopy
 
-
-from app_monitor.elements_base import ProgressBar, Table, TextElement
+from app_monitor.elements_base import (
+    ProgressBar,
+    Table,
+    TextElement,
+    RangeBar,
+    MonitorGroup,
+)
 from app_monitor.server import ZeroMQUpdateServer
 
 import logging
@@ -20,10 +26,24 @@ class MonitorManager:
         """Add a monitor element to the manager."""
         self.elements.append(element)
 
+    def add_element_group(self, group_id, elements):
+        """Add a group of elements to the manager by creating a MonitorGroup."""
+        # Automatically set hierarchical IDs based on the group_id
+        group_elements = {
+            f"{group_id}.{element.element_id}": element for element in elements
+        }
+        group = MonitorGroup(group_id=group_id, elements=group_elements, border=True)
+        self.elements.append(group)  # Add the whole group as one element
+
     def update(self, element_id, *args):
-        """Update an element based on its ID."""
+        """Update an element or an element within a group based on its full hierarchical ID."""
         for element in self.elements:
-            if element.element_id == element_id:
+            if isinstance(element, MonitorGroup):
+                # Check if the element_id is within the group's elements
+                if element_id in element.elements:
+                    element.update_element(element_id, *args)
+                    break
+            elif element.element_id == element_id:
                 element.update(*args)
                 break
 
@@ -57,22 +77,23 @@ class MonitorManager:
 
 
 async def main():
-    # Create a MonitorManager instances
+    # Create a MonitorManager instance
     manager = MonitorManager()
 
-    # Add a progress bar and table elements with formatting
+    # Add a text element and a progress bar
     text = TextElement("Buffers")
     progress_bar1 = ProgressBar("progress_1", total_steps=100)
-    table = Table(
-        "table_1",
-        headers=["1m", "1h", "24h"],
-        variables=["Processed", "Errors"],
-        data_column_width=6,
-    )
-
     manager.add_element(text)
     manager.add_element(progress_bar1)
-    manager.add_element(table)
+
+    # Add a group of RangeBars (velocity and torque) for axis X
+    velocity = RangeBar(element_id="velocity", label="Velocity")
+    torque = RangeBar(element_id="torque", label="Torque")
+    manager.add_element_group("X", [velocity, torque])
+
+    # Update elements within the group
+    manager.update("X.velocity", 50)
+    manager.update("X.torque", 75)
 
     # Start ZeroMQ manager and subscriber
     zmq_server = ZeroMQUpdateServer(manager)
