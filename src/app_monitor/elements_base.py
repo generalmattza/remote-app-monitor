@@ -1,6 +1,8 @@
 from datetime import datetime
 from tabulate import tabulate
 
+from .logger import logger
+
 
 MAX_MONITOR_WIDTH = 60
 
