@@ -18,10 +18,12 @@ class UpdateServer:
         """Process updates received via message."""
         try:
             # Assuming message is in the format: "element_id var header value"
-            update_info = message.split()
-            element_id = update_info[0]
-            update_args = update_info[1:]
-            self.monitor_manager.update(element_id, *update_args)
+            parts = message.split(",")
+            for part in parts:
+                update_info = part.split()
+                element_id = update_info[0]
+                update_args = update_info[1:]
+                self.monitor_manager.update(element_id, *update_args)
         except Exception as e:
             logger.error(f"Error processing update: {e}")
 
@@ -49,11 +51,18 @@ class ZeroMQUpdateServer(UpdateServer):
 class SerialUpdateServer(UpdateServer):
     """Class to manage updates via a serial connection asynchronously."""
 
-    def __init__(self, monitor_manager, port="/dev/ttyUSB0", baudrate=9600):
+    def __init__(
+        self, monitor_manager, serial_instance=None, port="/dev/ttyUSB0", baudrate=9600
+    ):
         super().__init__(monitor_manager)
-        self.port = port
-        self.baudrate = baudrate
-        self.serial_connection = serial.Serial(port=self.port, baudrate=self.baudrate)
+        if serial_instance:
+            self.serial_connection = serial_instance
+            self.port = serial_instance.port
+            self.baudrate = serial_instance.baudrate
+        else:
+            self.serial_connection = serial.Serial(port=port, baudrate=baudrate)
+            self.port = port
+            self.baudrate = baudrate
 
     async def start_reader(self):
         """Start the serial reader asynchronously by polling the serial port."""
