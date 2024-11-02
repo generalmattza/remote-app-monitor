@@ -63,7 +63,7 @@ class SerialUpdateServer(UpdateServer):
             self.port = port
             self.baudrate = baudrate
 
-    async def start_reader(self):
+    async def start_reader(self, interval: float = 0.1):
         """Start the serial reader asynchronously by polling the serial port."""
         try:
             logger.info(
@@ -74,8 +74,8 @@ class SerialUpdateServer(UpdateServer):
                     message = self.serial_connection.readline().decode("utf-8").strip()
                     self.process_update(message)
                 await asyncio.sleep(
-                    0.1
-                )  # Poll every 100ms to avoid blocking the event loop
+                    interval
+                )  # Poll every interval s to avoid blocking the event loop
 
         except Exception as e:
             logger.error(f"Error in serial connection: {e}")
