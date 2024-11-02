@@ -1,6 +1,8 @@
 import zmq
 import zmq.asyncio
 
+from .logger import logger
+
 
 class UpdateManager:
     """Class to manage updates from different sources."""
@@ -17,7 +19,7 @@ class UpdateManager:
             update_args = update_info[1:]
             self.monitor_manager.update(element_id, *update_args)
         except Exception as e:
-            print(f"Error processing update: {e}")
+            logger.error(f"Error processing update: {e}")
 
 
 class ZeroMQUpdateManager(UpdateManager):
@@ -34,7 +36,7 @@ class ZeroMQUpdateManager(UpdateManager):
 
     async def start_subscriber(self):
         """Start the ZeroMQ subscriber asynchronously."""
-        print(f"Subscribed to {self.host}:{self.port}")
+        logger.info(f"Subscribed to {self.host}:{self.port}")
         while True:
             message = await self.socket.recv_string()  # Non-blocking receive
             self.process_update(message)

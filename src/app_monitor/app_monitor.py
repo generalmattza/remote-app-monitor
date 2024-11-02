@@ -1,5 +1,6 @@
 import asyncio
 from copy import deepcopy
+import sys
 
 from app_monitor.elements_base import (
     ProgressBar,
@@ -10,9 +11,7 @@ from app_monitor.elements_base import (
 )
 from app_monitor.server import ZeroMQUpdateServer
 
-import logging
-
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 
 class MonitorManager:
@@ -63,11 +62,13 @@ class MonitorManager:
         self.clear_monitor()
 
         # Print the entire buffered content at once
-        print("\n".join(self.buffer))
+        sys.stdout.write("\n".join(self.buffer))
+        # print("\n".join(self.buffer))
 
     def clear_monitor(self):
         """Clear the monitor screen."""
-        print("\033[2J\033[H")  # Clear screen and move cursor to top left
+        sys.stdout.write("\033[2J\033[H")  # Clear screen and move cursor to top left
+        # print("\033[2J\033[H")  # Clear screen and move cursor to top left
 
     async def update_at_fixed_rate(self, interval=1):
         """Asynchronously update the monitor at a fixed rate."""

@@ -4,8 +4,7 @@ import zmq.asyncio
 import serial
 import logging
 
-# from app_monitor.app_monitor import logger
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 
 class UpdateServer:

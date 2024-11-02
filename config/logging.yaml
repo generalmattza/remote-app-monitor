@@ -6,7 +6,7 @@ handlers:
     stream: ext://sys.stdout
 
 loggers:
-  root:
+  app_monitor:
     level: DEBUG
     handlers:
       - console
