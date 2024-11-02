@@ -418,7 +418,7 @@ class LogMonitor(MonitorElement):
         self.width = width
         self.header = header
 
-    def update(self, log):
+    def update(self, *log):
         """Update the log monitor with a new log entry."""
         if self.timestamp:
             log = f"{datetime.now().strftime(self.timestamp_format)[:-self.timestamp_significant_digits]}  {log}"

@@ -22,6 +22,7 @@ from app_monitor import (
     RangeBar,
     TextElement,
     ZeroMQUpdateServer,
+    SerialUpdateServer,
     LogMonitor,
 )
 
@@ -43,36 +44,28 @@ async def main():
 
     # Add a progress bar and table elements with formatting
     BAR_WIDTH = 30
-    text = TextElement(element_id="text_0", text="*** Buffers ***")
+    text_format = {"bold": True}
+    x_position = TextElement(
+        element_id="X_position", text="X: 0.0000", text_format=text_format
+    )
+    y_position = TextElement(
+        element_id="Y_position", text="Y: 0.0000", text_format=text_format
+    )
+    z_position = TextElement(
+        element_id="Z_position", text="Z: 0.0000", text_format=text_format
+    )
 
-    database_buffer_fill = ProgressBar(
-        element_id="database_buffer_fill",
-        label="Database",
-        total_steps=1000,
-        width=BAR_WIDTH,
-    )
-    processing_buffer_fill = ProgressBar(
-        element_id="processing_buffer_fill",
-        label="Processing",
-        total_steps=1000,
-        width=BAR_WIDTH,
-        bar_format=dict(fg_color="blue"),
-    )
-    table = Table(
-        element_id="metrics_processed",
-        headers=["Count"],
-        variables=["Processed", "Errors"],
-        data_column_width=6,
-    )
+    [manager.add_element(el) for el in [x_position, y_position, z_position]]
 
     # Example instantiation of the RangeBar
     axis_properties = dict(
-        min_value=-150,
-        max_value=150,
+        min_value=-1000,
+        max_value=1000,
         # width=50,  # Total width of the bar (e.g., 50 characters)
         bar_format={"fg_color": "green"},  # Custom formatting for the bar (optional)
         text_format={"bold": True},  # Custom formatting for the display text (optional)
         max_label_length=12,  # Maximum length of the label (e.g., 5 characters)
+        max_display_length=8,  # Maximum length of the value (e.g., 5 characters)
         marker_trace="█",
         range_trace="-",
     )
@@ -99,15 +92,17 @@ async def main():
     manager.add_element(logger)
 
     # Start ZeroMQ manager and subscriber
-    zmq_server = ZeroMQUpdateServer(manager)
+    server = SerialUpdateServer(
+        manager, port="/dev/tty.usbserial-1450", baudrate=115200
+    )
 
     # Create the task to update the monitor manager at a fixed rate
     asyncio.create_task(
-        manager.update_at_fixed_rate(interval=0.02)
+        manager.update_at_fixed_rate(interval=0.01)
     )  # Updates every 1 second
 
     # Start the ZeroMQ subscriber (it will process updates asynchronously)
-    await zmq_server.start_subscriber()
+    await server.start_reader(interval=0.01)
 
 
 if __name__ == "__main__":
