@@ -77,6 +77,25 @@ class MonitorManager:
             self.display_all()  # Display the current metrics
             await asyncio.sleep(interval)  # Wait for the next update cycle
 
+    def generate_element_id_map(self):
+        """Generate a list of all element IDs in the monitor manager."""
+        element_count = 0
+
+        def _element_id_generator(elements):
+            """Recursively generate element IDs."""
+            nonlocal element_count
+            for element in elements:
+                if isinstance(element, MonitorGroup):
+                    yield from _element_id_generator(element.elements.values())
+                else:
+                    yield element_count, element.element_id
+                    element_count += 1
+
+        return {
+            str(number): element_id
+            for number, element_id in _element_id_generator(self.elements)
+        }
+
 
 async def main():
     # Create a MonitorManager instance

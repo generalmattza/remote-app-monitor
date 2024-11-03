@@ -215,6 +215,8 @@ class RangeBar(MonitorElement):
         marker_trace="|",
         range_trace="-",
         unit=None,
+        scale=1,
+        digits=2,
     ):
         super().__init__(element_id)
         self.min_value = min_value
@@ -224,11 +226,13 @@ class RangeBar(MonitorElement):
         self.label = label
         self.display_value = display_value
         self.max_label_length = max_label_length or 10
-        self.max_display_length = max_display_length or 7
+        self.max_display_length = max_display_length or 6
         self.marker_trace = marker_trace
         self.range_trace = range_trace
         self.unit = unit or ""  # Add unit parameter for display
-        self.max_unit_length = max(len(self.unit), 4)
+        self.max_unit_length = max(len(self.unit), 5)
+        self.scale = scale
+        self.digits = digits
 
         # Store formatting options for the bar itself and the text
         self.bar_format = bar_format
@@ -236,7 +240,9 @@ class RangeBar(MonitorElement):
 
     def update(self, value, display_value=None):
         """Update range bar based on the current value within the range."""
-        self.current_value = max(self.min_value, min(float(value), self.max_value))
+        self.current_value = max(
+            self.min_value, min(float(value) * self.scale, self.max_value)
+        )
         if display_value:
             self.display_value = display_value
         return self.display()
@@ -249,7 +255,9 @@ class RangeBar(MonitorElement):
         )
 
         # Format the numeric value to ensure decimal alignment, right-justified with two decimal places
-        numeric_value = f"{self.current_value:>{self.max_display_length}.2f}"
+        numeric_value = (
+            f"{self.current_value:>{self.max_display_length}.{self.digits}f}"
+        )
 
         # Combine the numeric value with the unit, ensuring unit is left-justified
         full_display_value = f"{numeric_value} {self.unit}".ljust(
@@ -264,7 +272,7 @@ class RangeBar(MonitorElement):
         )
 
         # Calculate bar width and position of the marker
-        bar_width = self.width - self.max_label_length - self.max_display_length - 12
+        bar_width = self.width - self.max_label_length - self.max_display_length - 13
         marker_position = min(int(bar_width * progress_ratio), bar_width - 1)
 
         # Create the bar with a marker at the current position
