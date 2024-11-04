@@ -96,7 +96,7 @@ async def main():
         baudrate=115200,
         dict_encoding_map=manager.generate_element_id_map(),
         enable_hex=False,
-        fixed_point_scaling=True,
+        # fixed_point_scaling=True,
     )
 
     # Create the task to update the monitor manager at a fixed rate
