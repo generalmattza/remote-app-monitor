@@ -1,5 +1,6 @@
 import asyncio
 from copy import deepcopy
+import sys
 
 from app_monitor.elements_base import (
     ProgressBar,
@@ -10,9 +11,7 @@ from app_monitor.elements_base import (
 )
 from app_monitor.server import ZeroMQUpdateServer
 
-import logging
-
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 
 class MonitorManager:
@@ -30,7 +29,8 @@ class MonitorManager:
         """Add a group of elements to the manager by creating a MonitorGroup."""
         # Automatically set hierarchical IDs based on the group_id
         group_elements = {
-            f"{group_id}.{element.element_id}": element for element in elements
+            f"{group_id}.{element.element_id}": element
+            for element in deepcopy(elements)
         }
         group = MonitorGroup(group_id=group_id, elements=group_elements, border=True)
         self.elements.append(group)  # Add the whole group as one element
@@ -63,17 +63,38 @@ class MonitorManager:
         self.clear_monitor()
 
         # Print the entire buffered content at once
-        print("\n".join(self.buffer))
+        sys.stdout.write("\n".join(self.buffer))
+        # print("\n".join(self.buffer))
 
     def clear_monitor(self):
         """Clear the monitor screen."""
-        print("\033[2J\033[H")  # Clear screen and move cursor to top left
+        sys.stdout.write("\033[2J\033[H")  # Clear screen and move cursor to top left
+        # print("\033[2J\033[H")  # Clear screen and move cursor to top left
 
     async def update_at_fixed_rate(self, interval=1):
         """Asynchronously update the monitor at a fixed rate."""
         while True:
             self.display_all()  # Display the current metrics
             await asyncio.sleep(interval)  # Wait for the next update cycle
+
+    def generate_element_id_map(self):
+        """Generate a list of all element IDs in the monitor manager."""
+        element_count = 0
+
+        def _element_id_generator(elements):
+            """Recursively generate element IDs."""
+            nonlocal element_count
+            for element in elements:
+                if isinstance(element, MonitorGroup):
+                    yield from _element_id_generator(element.elements.values())
+                else:
+                    yield element_count, element.element_id
+                    element_count += 1
+
+        return {
+            str(number): element_id
+            for number, element_id in _element_id_generator(self.elements)
+        }
 
 
 async def main():

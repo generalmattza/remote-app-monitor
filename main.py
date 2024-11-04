@@ -11,6 +11,7 @@
 import logging
 from logging.config import dictConfig
 import asyncio
+import math
 
 # Import the load_configs function
 from config_loader import load_configs
@@ -22,8 +23,10 @@ from app_monitor import (
     RangeBar,
     TextElement,
     ZeroMQUpdateServer,
+    SerialUpdateServer,
     LogMonitor,
 )
+from app_monitor.elements_advanced import CoordinateTextElement
 
 LOGGING_CONFIG_FILEPATH = "config/logging.yaml"
 APP_CONFIG_FILEPATH = "config/application.toml"
@@ -43,41 +46,29 @@ async def main():
 
     # Add a progress bar and table elements with formatting
     BAR_WIDTH = 30
-    text = TextElement(element_id="text_0", text="*** Buffers ***")
+    text_format = {"bold": True}
+    position = CoordinateTextElement(
+        element_id="position", text="Position", text_format=text_format, units="mm"
+    )
 
-    database_buffer_fill = ProgressBar(
-        element_id="database_buffer_fill",
-        label="Database",
-        total_steps=1000,
-        width=BAR_WIDTH,
-    )
-    processing_buffer_fill = ProgressBar(
-        element_id="processing_buffer_fill",
-        label="Processing",
-        total_steps=1000,
-        width=BAR_WIDTH,
-        bar_format=dict(fg_color="blue"),
-    )
-    table = Table(
-        element_id="metrics_processed",
-        headers=["Count"],
-        variables=["Processed", "Errors"],
-        data_column_width=6,
-    )
+    manager.add_element(position)
 
     # Example instantiation of the RangeBar
     axis_properties = dict(
-        min_value=-150,
-        max_value=150,
+        min_value=-10,
+        max_value=10,
         # width=50,  # Total width of the bar (e.g., 50 characters)
         bar_format={"fg_color": "green"},  # Custom formatting for the bar (optional)
         text_format={"bold": True},  # Custom formatting for the display text (optional)
         max_label_length=12,  # Maximum length of the label (e.g., 5 characters)
+        max_display_length=5,  # Maximum length of the value (e.g., 5 characters)
         marker_trace="█",
         range_trace="-",
+        digits=1,
+        scale=60 / 6000,
     )
     axis_velocity = RangeBar(
-        element_id="velocity", label="Axis Vel", unit="m/s", **axis_properties
+        element_id="velocity", label="Axis Vel", unit="mm/s", **axis_properties
     )
     axis_torque = RangeBar(
         element_id="torque", label="Axis Torque", unit="Nm", **axis_properties
@@ -87,7 +78,7 @@ async def main():
         element_id="logger",
         timestamp=True,
         timestamp_format="%H:%M:%S.%f",
-        timestamp_significant_digits=3,
+        # timestamp_significant_digits=3,
         border=True,
     )
 
@@ -98,8 +89,15 @@ async def main():
 
     manager.add_element(logger)
 
-    # Start ZeroMQ manager and subscriber
-    zmq_server = ZeroMQUpdateServer(manager)
+    # Start serial manager and subscriber
+    server = SerialUpdateServer(
+        manager,
+        port="/dev/tty.usbserial-1450",
+        baudrate=115200,
+        dict_encoding_map=manager.generate_element_id_map(),
+        enable_hex=False,
+        # fixed_point_scaling=True,
+    )
 
     # Create the task to update the monitor manager at a fixed rate
     asyncio.create_task(
@@ -107,7 +105,7 @@ async def main():
     )  # Updates every 1 second
 
     # Start the ZeroMQ subscriber (it will process updates asynchronously)
-    await zmq_server.start_subscriber()
+    await server.start_reader(interval=0.02)
 
 
 if __name__ == "__main__":

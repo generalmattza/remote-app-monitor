@@ -1,4 +1,4 @@
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 from .app_monitor import MonitorManager
@@ -10,4 +10,5 @@ from .elements_base import (
     LogMonitor,
     MonitorGroup,
 )
+from .elements_advanced import CoordinateTextElement
 from .server import ZeroMQUpdateServer, SerialUpdateServer
