@@ -23,6 +23,7 @@ class UpdateServer:
         """Process updates received via message."""
 
         packet_dict = assign_keys_to_packet(packet, self.element_id_packet_keys)
+        logger.debug(f"Received packet: {packet_dict}")
 
         for element_id, value in packet_dict.items():
             try:
@@ -86,18 +87,9 @@ class SerialUpdateServer(UpdateServer):
                 if self.serial_connection.in_waiting:
                     # Read available data on the serial port
                     data = self.serial_connection.read_input()
-
-                    # Accumulate data in buffer
                     if data:
-                        self.buffer += data  
-                    if self.buffer:
-                        # read the freshest packet only from the buffer
-                        packet = read_freshest_packet(self.buffer)
-                        # process the update
-                        self.process_update(packet)
-                        # reset buffer, discarding all other data
-                        self.buffer = b""
-                    
+                        data = struct.unpack(self.packet_format, data)
+                        self.process_update(data)
                 await asyncio.sleep(interval)
 
         except Exception as e:
@@ -129,26 +121,3 @@ def assign_keys_to_packet(packet, keys):
     packet_dict = dict(zip(keys, packet))
     
     return packet_dict
-
-import struct
-
-def read_freshest_packet(buffer, packet_size, packet_format):
-    # Find the last occurrence of a valid packet in the buffer
-    start_index = buffer.rfind(b'\xff')
-    
-    # Check if there's enough room in the buffer for a complete packet after this start byte
-    if start_index != -1 and start_index + 1 + packet_size + 1 <= len(buffer):
-        # Read the packet data and check the end byte
-        end_index = start_index + 1 + packet_size
-        if buffer[end_index:end_index+1] == b'\xfe':
-            data = buffer[start_index+1:end_index]
-            # Unpack the packet
-            try:
-                return struct.unpack(packet_format, data)
-            except struct.error as e:
-                logger.error(f"Error unpacking data: {e}")
-        else:
-            logger.warning("End byte not found in the latest packet.")
-    else:
-        logger.warning("No valid packet found.")
-    return None
