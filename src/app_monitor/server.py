@@ -14,33 +14,22 @@ class UpdateServer:
     def __init__(
         self,
         monitor_manager,
-        dict_encoding_map=None,
-        enable_hex=False,
-        fixed_point_scaling=False,
+        element_id_packet_keys=None,
     ):
         self.monitor_manager = monitor_manager
-        self.dict_encoding_map = dict_encoding_map
-        self.enable_hex = enable_hex
-        self.fixed_point_scaling = fixed_point_scaling
-        self.scale = 100.0 if self.fixed_point_scaling else 1.0
+        self.element_id_packet_keys = element_id_packet_keys
 
-    def process_update(self, message):
+    def process_update(self, packet):
         """Process updates received via message."""
-        try:
-            for part in filter(None, message.split(",")):
-                element_id, *update_args = part.split()
-                if self.dict_encoding_map:
-                    element_id = self.dict_encoding_map.get(element_id, element_id)
-                try:
-                    if self.enable_hex:
-                        update_args = [int(arg, 16) / self.scale for arg in update_args]
-                    else:
-                        update_args = [float(arg) / self.scale for arg in update_args]
-                except ValueError:
-                    pass
-                self.monitor_manager.update(element_id, *update_args)
-        except Exception as e:
-            logger.error(f"Error processing update: {e}")
+
+        packet_dict = assign_keys_to_packet(packet, self.element_id_packet_keys)
+        logger.debug(f"Received packet: {packet_dict}")
+
+        for element_id, value in packet_dict.items():
+            try:
+                self.monitor_manager.update(element_id, value)
+            except Exception as e:
+                logger.error(f"Error processing update: {e}")
 
 
 class ZeroMQUpdateServer(UpdateServer):
@@ -69,13 +58,13 @@ class SerialUpdateServer(UpdateServer):
     def __init__(
         self,
         monitor_manager,
-        dict_encoding_map=None,
-        enable_hex=False,
         serial_instance=None,
         port="/dev/ttyUSB0",
         baudrate=9600,
+        packet_format='<iiiii',
+        element_id_packet_keys=None,
     ):
-        super().__init__(monitor_manager, dict_encoding_map, enable_hex)
+        super().__init__(monitor_manager, element_id_packet_keys=element_id_packet_keys)
         if serial_instance:
             self.serial_connection = serial_instance
             self.port = serial_instance.port
@@ -85,28 +74,22 @@ class SerialUpdateServer(UpdateServer):
             self.port = port
             self.baudrate = baudrate
         self.running = True
-        self.buffer = ""
+        self.buffer = b""
+
+        self.packet_format = packet_format
+        self.packet_size = struct.calcsize(packet_format)
 
     async def start_reader(self, interval: float = 0.1):
         """Start the serial reader asynchronously by polling the serial port."""
         try:
             while True:
-                if self.serial_connection.in_waiting > 0:
-                    # Read available data
-                    data = self.serial_connection.read(
-                        self.serial_connection.in_waiting
-                    ).decode("utf-8")
-                    self.buffer += data  # Accumulate data in buffer
-
-                    # Split buffer on commas to get complete values
-                    *messages, self.buffer = self.buffer.split(",")
-
-                    # Process each complete message
-                    for message in messages:
-                        if message:  # Skip empty messages
-                            # logger.debug(message.strip())
-                            self.process_update(message.strip())
-
+                # If there is data on the serial port, then read it
+                if self.serial_connection.in_waiting:
+                    # Read available data on the serial port
+                    data = self.serial_connection.read_input()
+                    if data:
+                        data = struct.unpack(self.packet_format, data)
+                        self.process_update(data)
                 await asyncio.sleep(interval)
 
         except Exception as e:
@@ -128,3 +111,13 @@ class SerialUpdateServer(UpdateServer):
     def stop(self):
         """Stop the serial reader loop."""
         self.running = False
+
+import struct
+
+
+def assign_keys_to_packet(packet, keys):
+
+    # Use zip to pair keys and values, then create a dictionary
+    packet_dict = dict(zip(keys, packet))
+    
+    return packet_dict

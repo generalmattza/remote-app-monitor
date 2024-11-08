@@ -21,11 +21,12 @@ class MonitorElement:
 
     id_generator = id_generator("element")
 
-    def __init__(self, element_id=None, border=False):
+    def __init__(self, element_id=None, border=False, width=MAX_MONITOR_WIDTH):
         self.element_id = (
             element_id or self.get_unique_id()
         )  # Assign a unique ID to each element
         self.border = border
+        self.width = width
 
     def display(self):
         raise NotImplementedError("Subclasses must implement the display method")
@@ -39,7 +40,7 @@ class MonitorElement:
         if not self.border:
             return content
         lines = content.split("\n")
-        width = max(len(line) for line in lines) + 4
+        width = min(max(len(line) for line in lines) + 4, self.width)
         border_top = "+" + "-" * (width - 2) + "+"
         bordered_content = [f"| {line.ljust(width - 4)} |" for line in lines]
         border_bottom = border_top
@@ -107,27 +108,36 @@ class TextElement(MonitorElement):
 
     id_generator = id_generator("text")
 
-    def __init__(self, text, element_id=None, text_format=None):
-        super().__init__(element_id)
+    def __init__(self, text, static_text=None, element_id=None, text_format=None, width=MAX_MONITOR_WIDTH):
+        super().__init__(element_id, width=width)
         self.text = text
         self.text_format = text_format
+        self.static_text = static_text
 
     def update(self, text):
         """Update the text element with new text."""
-        self.text = text
+        self.text = str(text)
 
     def display(self):
         """Generate the text element for display."""
+        # Combine static and dynamic text
+        full_text = self.static_text + self.text if self.static_text else self.text
+        
+        # Format the text with padding
+        padded_text = full_text.ljust(self.width)
+
+        # Apply any text formatting if provided
         content = (
-            format_text(self.text, **self.text_format)
+            format_text(padded_text, **self.text_format)
             if self.text_format
-            else self.text
+            else padded_text
         )
         return self.add_border(content)
 
     def get_height(self):
         """Calculate the number of lines the text element occupies."""
         return self.text.count("\n") + 1
+
 
 
 class ProgressBar(MonitorElement):
