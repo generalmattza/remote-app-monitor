@@ -27,6 +27,7 @@ from app_monitor import (
     LogMonitor,
 )
 from app_monitor.elements_advanced import CoordinateTextElement
+from app_monitor.server import OrderedDecoder
 
 LOGGING_CONFIG_FILEPATH = "config/logging.yaml"
 APP_CONFIG_FILEPATH = "config/application.toml"
@@ -92,20 +93,18 @@ async def main():
     # Start serial manager and subscriber
     server = SerialUpdateServer(
         manager,
-        port="/dev/tty.usbserial-1450",
+        port="/dev/tty.usbserial-1440",
         baudrate=115200,
-        dict_encoding_map=manager.generate_element_id_map(),
-        enable_hex=False,
-        # fixed_point_scaling=True,
+        decoder=OrderedDecoder(keys=["X.velocity", "Y.velocity", "Z.velocity"]),
     )
 
     # Create the task to update the monitor manager at a fixed rate
     asyncio.create_task(
-        manager.update_at_fixed_rate(interval=0.02)
+        manager.update_fixed_rate(frequency=60)
     )  # Updates every 1 second
 
     # Start the ZeroMQ subscriber (it will process updates asynchronously)
-    await server.start_reader(interval=0.02)
+    await server.start(frequency=60)
 
 
 if __name__ == "__main__":
