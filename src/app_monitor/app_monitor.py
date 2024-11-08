@@ -47,8 +47,8 @@ class MonitorManager:
                 element.update(*args)
                 break
 
-    def display_all(self):
-        """Construct the full screen content in a buffer and then display it."""
+    def update_all_elements(self):
+        """Construct the full screen content in a buffer"""
         self.buffer = []  # Clear the buffer for the new frame
 
         for element in self.elements:
@@ -56,26 +56,35 @@ class MonitorManager:
                 element.display()
             )  # Add each element's display to the buffer
 
-        self.flush_buffer_to_screen()
-
-    def flush_buffer_to_screen(self):
+    def update_screen(self):
         """Clear the terminal and write the buffer contents to the screen."""
         self.clear_monitor()
-
         # Print the entire buffered content at once
         sys.stdout.write("\n".join(self.buffer))
-        # print("\n".join(self.buffer))
 
     def clear_monitor(self):
         """Clear the monitor screen."""
         sys.stdout.write("\033[2J\033[H")  # Clear screen and move cursor to top left
-        # print("\033[2J\033[H")  # Clear screen and move cursor to top left
 
-    async def update_at_fixed_rate(self, interval=1):
+    async def update_screen_fixed_rate(self, frequency=1):
         """Asynchronously update the monitor at a fixed rate."""
+        assert frequency > 0, "Frequency must be greater than 0."
         while True:
-            self.display_all()  # Display the current metrics
-            await asyncio.sleep(interval)  # Wait for the next update cycle
+            self.update_screen()  # Display the current metrics
+            await asyncio.sleep(1 / frequency)  # Wait for the next update cycle
+
+    async def update_all_elements_fixed_rate(self, frequency=1):
+        """Asynchronously update all elements at a fixed rate."""
+        assert frequency > 0, "Frequency must be greater than 0."
+        while True:
+            self.update_all_elements()
+            await asyncio.sleep(1 / frequency)
+
+    async def update_fixed_rate(self, frequency=30):
+        await asyncio.gather(
+            self.update_screen_fixed_rate(frequency=frequency),
+            self.update_all_elements_fixed_rate(frequency=frequency),
+        )
 
     def generate_element_id_map(self):
         """Generate a list of all element IDs in the monitor manager."""
