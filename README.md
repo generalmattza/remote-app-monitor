@@ -21,7 +21,7 @@
 2. **Install Dependencies**:
    Make sure you have Python 3.7+ installed, then install dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install .
    ```
 
 ## Usage
