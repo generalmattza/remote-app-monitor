@@ -108,9 +108,16 @@ class TextElement(MonitorElement):
 
     id_generator = id_generator("text")
 
-    def __init__(self, text, static_text=None, element_id=None, text_format=None, width=MAX_MONITOR_WIDTH):
+    def __init__(
+        self,
+        text=None,
+        static_text=None,
+        element_id=None,
+        text_format=None,
+        width=MAX_MONITOR_WIDTH,
+    ):
         super().__init__(element_id, width=width)
-        self.text = text
+        self.text = "" if text is None else str(text)
         self.text_format = text_format
         self.static_text = static_text
 
@@ -122,7 +129,7 @@ class TextElement(MonitorElement):
         """Generate the text element for display."""
         # Combine static and dynamic text
         full_text = self.static_text + self.text if self.static_text else self.text
-        
+
         # Format the text with padding
         padded_text = full_text.ljust(self.width)
 
@@ -137,7 +144,6 @@ class TextElement(MonitorElement):
     def get_height(self):
         """Calculate the number of lines the text element occupies."""
         return self.text.count("\n") + 1
-
 
 
 class ProgressBar(MonitorElement):

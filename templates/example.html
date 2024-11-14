@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Display</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .element {
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Monitor Display</h1>
+    <div id="monitor"></div>
+
+    <script>
+        const monitorDiv = document.getElementById('monitor');
+        const socket = io();
+
+        // Listen for updates from the server
+        socket.on('update', function(data) {
+            const parsedData = JSON.parse(data);
+            monitorDiv.innerHTML = '';  // Clear previous content
+
+            // Display each element_id: text pair
+            for (const [element_id, text] of Object.entries(parsedData)) {
+                const elementDiv = document.createElement('div');
+                elementDiv.classList.add('element');
+                elementDiv.textContent = `${text}`;
+                monitorDiv.appendChild(elementDiv);
+            }
+        });
+    </script>
+</body>
+</html>

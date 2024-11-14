@@ -1,7 +1,7 @@
-__version__ = "0.0.2"
+__version__ = "0.1.0"
 
 
-from .app_monitor import MonitorManager
+from .app_monitor import TerminalManager, SocketManager
 from .elements_base import (
     ProgressBar,
     Table,
