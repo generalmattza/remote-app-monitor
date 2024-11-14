@@ -3,38 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor Display</title>
+    <title>Robotic Positioning Unit</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
         }
-        .element {
-            padding: 5px 0;
+        .position-display {
+            text-align: center;
+        }
+        .position {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+        .position span {
+            font-size: 1.5rem;
+            color: #555;
         }
     </style>
 </head>
 <body>
-    <h1>Monitor Display</h1>
-    <div id="monitor"></div>
+    <div class="position-display" id="positionDisplay">
+        <div class="position" id="posX">X: <span>000.000</span> mm</div>
+        <div class="position" id="posY">Y: <span>000.000</span> mm</div>
+        <div class="position" id="posZ">Z: <span>000.000</span> mm</div>
+    </div>
 
     <script>
-        const monitorDiv = document.getElementById('monitor');
         const socket = io();
 
-        // Listen for updates from the server
+        // Update the positions when data is received from the server
         socket.on('update', function(data) {
             const parsedData = JSON.parse(data);
-            monitorDiv.innerHTML = '';  // Clear previous content
-
-            // Display each element_id: text pair
-            for (const [element_id, text] of Object.entries(parsedData)) {
-                const elementDiv = document.createElement('div');
-                elementDiv.classList.add('element');
-                elementDiv.textContent = `${text}`;
-                monitorDiv.appendChild(elementDiv);
-            }
+            
+            // Set the text content for each axis position
+            document.getElementById('posX').querySelector('span').textContent = parsedData['element1'];
+            document.getElementById('posY').querySelector('span').textContent = parsedData['element2'];
+            document.getElementById('posZ').querySelector('span').textContent = parsedData['element3'];
         });
     </script>
 </body>

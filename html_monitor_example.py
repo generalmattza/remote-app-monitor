@@ -15,9 +15,9 @@ socketio = SocketIO(app)
 manager = SocketManager(socketio=socketio, frequency=20)  # 20Hz update rate
 
 # Define and add elements to the manager
-text_element1 = TextElement(static_text="Element1: ", element_id="element1")
-text_element2 = TextElement(static_text="Element2: ", element_id="element2")
-text_element3 = TextElement(static_text="Element3: ", element_id="element3")
+text_element1 = TextElement(element_id="element1")
+text_element2 = TextElement(element_id="element2")
+text_element3 = TextElement(element_id="element3")
 manager.add_element(text_element1)
 manager.add_element(text_element2)
 manager.add_element(text_element3)
