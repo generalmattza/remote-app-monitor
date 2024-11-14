@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Data Display</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Real-Time Data</h1>
+    <div id="dataDisplay">Waiting for data...</div>
+
+    <script>
+        const socket = io();
+
+        // Listen for serial data events from the server
+        socket.on('serial_data', function(data) {
+            document.getElementById('dataDisplay').innerText = data.data;
+        });
+    </script>
+</body>
+</html>
