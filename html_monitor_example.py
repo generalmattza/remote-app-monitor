@@ -6,6 +6,7 @@ import threading
 from app_monitor import SocketManager
 from app_monitor.server import OrderedDecoder, SerialUpdateServer
 from app_monitor.elements_base import TextElement
+from app_monitor.text_formatter import TextFormat
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
@@ -14,10 +15,11 @@ socketio = SocketIO(app)
 # Initialize SocketManager with Flask-SocketIO instance
 manager = SocketManager(socketio=socketio, frequency=20)  # 20Hz update rate
 
+text_format = TextFormat(width=6, precision=3, force_sign=True)
 # Define and add elements to the manager
-text_element1 = TextElement(element_id="element1")
-text_element2 = TextElement(element_id="element2")
-text_element3 = TextElement(element_id="element3")
+text_element1 = TextElement(element_id="element1", text_format=text_format)
+text_element2 = TextElement(element_id="element2", text_format=text_format)
+text_element3 = TextElement(element_id="element3", text_format=text_format)
 manager.add_element(text_element1)
 manager.add_element(text_element2)
 manager.add_element(text_element3)

@@ -16,25 +16,52 @@
             background-color: #f4f4f9;
         }
         .position-display {
-            text-align: center;
+            text-align: left;
         }
-        .position {
-            font-size: 4rem;
-            font-weight: bold;
+        .position-row {
+            display: flex;
+            align-items: baseline;
+            font-size: 3rem;
             margin: 10px 0;
-            color: #333;
         }
-        .position span {
+        .axis-label {
+            width: 50px;  /* Adjust as needed for label spacing */
+            font-weight: bold;
+            text-align: left;
+        }
+        .value {
+            display: flex;
+            justify-content: right;
+            width: 200px; /* Adjust for desired number alignment */
+            tab-size: 4;
+        }
+        .decimal-aligned {
+            font-variant-numeric: tabular-nums; /* For decimal alignment */
+        }
+        .unit {
             font-size: 1.5rem;
+            margin-left: 10px;
             color: #555;
         }
     </style>
 </head>
 <body>
     <div class="position-display" id="positionDisplay">
-        <div class="position" id="posX">X: <span>000.000</span> mm</div>
-        <div class="position" id="posY">Y: <span>000.000</span> mm</div>
-        <div class="position" id="posZ">Z: <span>000.000</span> mm</div>
+        <div class="position-row">
+            <div class="axis-label">X:</div>
+            <div class="value decimal-aligned" id="posX">000.000</div>
+            <div class="unit">mm</div>
+        </div>
+        <div class="position-row">
+            <div class="axis-label">Y:</div>
+            <div class="value decimal-aligned" id="posY">000.000</div>
+            <div class="unit">mm</div>
+        </div>
+        <div class="position-row">
+            <div class="axis-label">Z:</div>
+            <div class="value decimal-aligned" id="posZ">000.000</div>
+            <div class="unit">mm</div>
+        </div>
     </div>
 
     <script>
@@ -45,9 +72,9 @@
             const parsedData = JSON.parse(data);
             
             // Set the text content for each axis position
-            document.getElementById('posX').querySelector('span').textContent = parsedData['element1'];
-            document.getElementById('posY').querySelector('span').textContent = parsedData['element2'];
-            document.getElementById('posZ').querySelector('span').textContent = parsedData['element3'];
+            document.getElementById('posX').textContent = parsedData['element1'];
+            document.getElementById('posY').textContent = parsedData['element2'];
+            document.getElementById('posZ').textContent = parsedData['element3'];
         });
     </script>
 </body>
