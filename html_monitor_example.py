@@ -15,21 +15,36 @@ socketio = SocketIO(app)
 # Initialize SocketManager with Flask-SocketIO instance
 manager = SocketManager(socketio=socketio, frequency=20)  # 20Hz update rate
 
-text_format = TextFormat(width=6, precision=3, force_sign=True)
+text_format = TextFormat(width=9, precision=3, force_sign=True)
+
+data_formats = {
+    "position_x": text_format,
+    "position_y": text_format,
+    "position_z": text_format,
+    "motor1_speed": None,
+    "motor1_torque": None,
+    "motor1_status": None,
+    "motor2_speed": None,
+    "motor2_torque": None,
+    "motor2_status": None,
+    "motor3_speed": None,
+    "motor3_torque": None,
+    "motor3_status": None,
+    "motor4_speed": None,
+    "motor4_torque": None,
+    "motor4_status": None,
+}
 # Define and add elements to the manager
-text_element1 = TextElement(element_id="element1", text_format=text_format)
-text_element2 = TextElement(element_id="element2", text_format=text_format)
-text_element3 = TextElement(element_id="element3", text_format=text_format)
-manager.add_element(text_element1)
-manager.add_element(text_element2)
-manager.add_element(text_element3)
+for name, format in data_formats.items():
+    text_element = TextElement(element_id=name, text_format=format)
+    manager.add_element(text_element)
 
 # Set up the Serial Update Server
 server = SerialUpdateServer(
     manager,
-    port="/dev/tty.usbserial-1460",
+    detect_devices=True,
     baudrate=115200,
-    decoder=OrderedDecoder(keys=["element1", "element2", "element3"]),
+    decoder=OrderedDecoder(keys=data_formats.keys()),
 )
 
 

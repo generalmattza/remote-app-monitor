@@ -59,6 +59,7 @@ class SerialUpdateServer(UpdateServer):
     def __init__(
         self,
         monitor_manager,
+        detect_devices=False,
         serial_instance=None,
         port="/dev/ttyUSB0",
         baudrate=9600,
@@ -67,13 +68,41 @@ class SerialUpdateServer(UpdateServer):
         super().__init__(monitor_manager)
         if serial_instance:
             self.serial_connection = serial_instance
-            self.port = serial_instance.port
-            self.baudrate = serial_instance.baudrate
+        elif detect_devices:
+            self.serial_connection = self.detect_devices(baudrate=baudrate)
         else:
             self.serial_connection = serial.Serial(port=port, baudrate=baudrate)
-            self.port = port
-            self.baudrate = baudrate
-            self.decoder = decoder
+
+        self.port = self.serial_connection.port
+        self.baudrate = self.serial_connection.baudrate
+        self.decoder = decoder
+
+    def detect_devices(
+        self,
+        search: str = r"usb",
+        pattern: str = "/dev/tty*",
+        baudrate=9600,
+    ):
+
+        def find_devices(search, pattern):
+            import glob
+            import re
+
+            # List all files matching the pattern /dev/tty*
+            files = glob.glob(pattern)
+
+            # Filter files that contain 'usb'
+            devices = [f for f in files if re.search(search, f)]
+
+            return devices
+
+        if devices := find_devices(search, pattern):
+            for device in devices:
+                try:
+                    serial_device = serial.Serial(port=device, baudrate=baudrate)
+                    return serial_device
+                except Exception as e:
+                    logger.error(f"Error connecting to {device}: {e}")
 
     async def start(self, frequency: float = 30):
         """Start the serial reader asynchronously by polling the serial port."""

@@ -42,22 +42,21 @@ class TextFormatter:
         self.force_sign = force_sign
 
     def format_text(self):
-        # Format the number if width, precision, or force_sign is specified
+        # Try to convert text to a float if it's a string
         if isinstance(self.text, str):
             try:
                 self.text = float(self.text)
             except ValueError:
-                return self.text
+                return self.text  # Return original text if it can't be converted
+
+        # If the text is a number, format it accordingly
         if isinstance(self.text, (int, float)):
-            # Build the format specification string
+            # Determine the sign based on force_sign
             sign = "+" if self.force_sign else ""
-            format_spec = (
-                f"{sign}{self.width}.{self.precision}f"
-                if self.precision is not None
-                else f"{self.width}f"
-            )
-            # Format the text according to the specification
-            return f"{float(self.text):{format_spec}}"
+            # Build the format specification string
+            format_spec = f"{sign}0{self.width}.{self.precision}f"
+            # Format the number according to the specification
+            return f"{self.text:{format_spec}}"
         else:
             # If it's not a number, return as-is
             return str(self.text)

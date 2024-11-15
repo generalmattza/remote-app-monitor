@@ -133,10 +133,12 @@ class TextElement(MonitorElement):
             self.text_format.format_text(full_text) if self.text_format else full_text
         )
 
-        # Format the text with padding
-        padded_text = full_text.ljust(self.width)
+        return full_text
 
-        return self.add_border(padded_text)
+        # # Format the text with padding
+        # padded_text = full_text.ljust(self.width)
+
+        # return self.add_border(padded_text)
 
     def get_height(self):
         """Calculate the number of lines the text element occupies."""
