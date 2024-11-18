@@ -1,10 +1,12 @@
 import asyncio
 from copy import deepcopy
 import sys
+import asyncio
+import json
+from flask_socketio import SocketIO
 
 from app_monitor.elements_base import (
     ProgressBar,
-    Table,
     TextElement,
     RangeBar,
     MonitorGroup,
@@ -107,11 +109,6 @@ class TerminalManager(MonitorManager):
             self.update_screen_fixed_rate(frequency=frequency),
             self.update_screen_buffer_fixed_rate(frequency=frequency),
         )
-
-
-import asyncio
-import json
-from flask_socketio import SocketIO
 
 
 class SocketManager(MonitorManager):
