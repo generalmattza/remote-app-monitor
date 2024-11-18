@@ -17,7 +17,7 @@ import math
 from config_loader import load_configs
 
 from app_monitor import (
-    MonitorManager,
+    TerminalManager,
     ProgressBar,
     Table,
     RangeBar,
@@ -43,7 +43,7 @@ async def main():
     logging.info(configs["application"])
 
     # Create a MonitorManager instances
-    manager = MonitorManager()
+    manager = TerminalManager()
 
     # Add a progress bar and table elements with formatting
     BAR_WIDTH = 30

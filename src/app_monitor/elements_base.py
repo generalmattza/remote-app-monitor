@@ -6,8 +6,6 @@ from .logger import logger
 
 MAX_MONITOR_WIDTH = 60
 
-from app_monitor.text_formatter import format_text
-
 
 def id_generator(prefix="element"):
     """Generate a unique ID for monitor elements."""
@@ -108,9 +106,16 @@ class TextElement(MonitorElement):
 
     id_generator = id_generator("text")
 
-    def __init__(self, text, static_text=None, element_id=None, text_format=None, width=MAX_MONITOR_WIDTH):
+    def __init__(
+        self,
+        text=None,
+        static_text=None,
+        element_id=None,
+        text_format=None,
+        width=MAX_MONITOR_WIDTH,
+    ):
         super().__init__(element_id, width=width)
-        self.text = text
+        self.text = "" if text is None else str(text)
         self.text_format = text_format
         self.static_text = static_text
 
@@ -122,22 +127,22 @@ class TextElement(MonitorElement):
         """Generate the text element for display."""
         # Combine static and dynamic text
         full_text = self.static_text + self.text if self.static_text else self.text
-        
-        # Format the text with padding
-        padded_text = full_text.ljust(self.width)
 
         # Apply any text formatting if provided
-        content = (
-            format_text(padded_text, **self.text_format)
-            if self.text_format
-            else padded_text
+        full_text = (
+            self.text_format.format_text(full_text) if self.text_format else full_text
         )
-        return self.add_border(content)
+
+        return full_text
+
+        # # Format the text with padding
+        # padded_text = full_text.ljust(self.width)
+
+        # return self.add_border(padded_text)
 
     def get_height(self):
         """Calculate the number of lines the text element occupies."""
         return self.text.count("\n") + 1
-
 
 
 class ProgressBar(MonitorElement):
@@ -183,7 +188,7 @@ class ProgressBar(MonitorElement):
         progress_percentage = self.current_step / self.total_steps
         if self.display_value is None:
             display_value = (
-                format_text(f"{progress_percentage * 100:.1f}%", **self.text_format)
+                self.text_format.format_text(f"{progress_percentage * 100:.1f}%")
                 if self.text_format
                 else f"{progress_percentage * 100:.1f}%"
             )
@@ -194,7 +199,7 @@ class ProgressBar(MonitorElement):
         bar = "█" * filled_length + "░" * (bar_width - filled_length)
 
         # Format the progress bar and the percentage text if formats are provided
-        formatted_bar = format_text(bar, **self.bar_format) if self.bar_format else bar
+        formatted_bar = self.text_format.format_text(bar) if self.bar_format else bar
 
         padded_label = self.label.ljust(self.max_label_length)
 
@@ -276,7 +281,7 @@ class RangeBar(MonitorElement):
 
         # Apply text formatting if specified
         display_value = (
-            format_text(full_display_value, **self.text_format)
+            self.text_format.format_text(full_display_value)
             if self.text_format
             else full_display_value
         )
@@ -293,7 +298,7 @@ class RangeBar(MonitorElement):
         )
 
         # Format the range bar and the current value if formats are provided
-        formatted_bar = format_text(bar, **self.bar_format) if self.bar_format else bar
+        formatted_bar = self.text_format.format_text(bar) if self.bar_format else bar
 
         padded_label = self.label.ljust(self.max_label_length)
 
@@ -354,9 +359,8 @@ class Table(MonitorElement):
         # Apply the data column width to the rest of the cells, with optional formatting
         formatted_data_cells = [
             (
-                format_text(
-                    self._truncate_or_pad(cell, self.data_column_width),
-                    **self.cell_format,
+                self.text_format.format_text(
+                    self._truncate_or_pad(cell, self.data_column_width)
                 )
                 if self.cell_format
                 else self._truncate_or_pad(cell, self.data_column_width)
@@ -364,9 +368,7 @@ class Table(MonitorElement):
             for cell in row
         ]
         formatted_left_cell = (
-            format_text(left_cell, **self.column_format)
-            if self.column_format
-            else left_cell
+            self.text_format.format_text(left_cell) if self.column_format else left_cell
         )
         return [formatted_left_cell] + formatted_data_cells
 
@@ -375,9 +377,8 @@ class Table(MonitorElement):
         # Center-align and format the headers
         centered_headers = [
             (
-                format_text(
-                    self._truncate_or_pad(header, self.data_column_width),
-                    **self.header_format,
+                self.text_format.format_text(
+                    self._truncate_or_pad(header, self.data_column_width)
                 )
                 if self.header_format
                 else self._truncate_or_pad(header, self.data_column_width)
@@ -391,7 +392,7 @@ class Table(MonitorElement):
         )  # Center and format the headers
         rows = [
             self.format_row(
-                format_text(var, **self.column_format) if self.column_format else var,
+                self.text_format.format_text(var) if self.column_format else var,
                 [self.data[var][i] for i in range(len(self.headers))],
             )
             for var in self.variables

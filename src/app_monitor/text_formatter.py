@@ -1,18 +1,68 @@
-def format_text(
-    text: str,
-    fg_color: str = None,
-    bg_color: str = None,
-    bold: bool = False,
-    dim: bool = False,
-):
-    # Given colors as strings such as "red", "green", "blue", etc.
-    # Return coded text
-
-    formatter = ANSITextFormatter(text, fg_color, bg_color, bold, dim)
-    return formatter.format_text()
+from dataclasses import dataclass
 
 
-class ANSITextFormatter:
+@dataclass
+class TextFormat:
+    width: int = None
+    precision: int = None
+    force_sign: bool = False
+    ansi_enabled: bool = False
+    fg_color: str = None
+    bg_color: str = None
+    bold: bool = False
+    dim: bool = False
+
+    def format_text(self, text):
+        if self.ansi_enabled:
+            formatter = ANSITextFormatter(
+                text,
+                fg_color=self.fg_color,
+                bg_color=self.bg_color,
+                bold=self.bold,
+                dim=self.dim,
+                width=self.width,
+                precision=self.precision,
+                force_sign=self.force_sign,
+            )
+        else:
+            formatter = TextFormatter(
+                text,
+                width=self.width,
+                precision=self.precision,
+                force_sign=self.force_sign,
+            )
+        return formatter.format_text()
+
+
+class TextFormatter:
+    def __init__(self, text, width=None, precision=None, force_sign=False):
+        self.text = text
+        self.width = width
+        self.precision = precision
+        self.force_sign = force_sign
+
+    def format_text(self):
+        # Try to convert text to a float if it's a string
+        if isinstance(self.text, str):
+            try:
+                self.text = float(self.text)
+            except ValueError:
+                return self.text  # Return original text if it can't be converted
+
+        # If the text is a number, format it accordingly
+        if isinstance(self.text, (int, float)):
+            # Determine the sign based on force_sign
+            sign = "+" if self.force_sign else ""
+            # Build the format specification string
+            format_spec = f"{sign}0{self.width}.{self.precision}f"
+            # Format the number according to the specification
+            return f"{self.text:{format_spec}}"
+        else:
+            # If it's not a number, return as-is
+            return str(self.text)
+
+
+class ANSITextFormatter(TextFormatter):
     COLORS = {
         "black": ("30", "40"),
         "red": ("31", "41"),
@@ -26,8 +76,18 @@ class ANSITextFormatter:
 
     STYLES = {"bold": "1", "dim": "2"}
 
-    def __init__(self, text, fg_color=None, bg_color=None, bold=False, dim=False):
-        self.text = text
+    def __init__(
+        self,
+        text,
+        fg_color=None,
+        bg_color=None,
+        bold=False,
+        dim=False,
+        width=None,
+        precision=None,
+        force_sign=False,
+    ):
+        super().__init__(text, width=width, precision=precision, force_sign=force_sign)
         self.fg_color = fg_color
         self.bg_color = bg_color
         self.bold = bold
@@ -40,6 +100,10 @@ class ANSITextFormatter:
         return self.COLORS.get(color, (None, None))[0 if type_ == "fg" else 1]
 
     def format_text(self):
+        # First, format the text using the base class's method
+        formatted_text = super().format_text()
+
+        # Apply ANSI formatting if enabled
         codes = []
         if self.bold:
             codes.append(self.STYLES["bold"])
@@ -51,13 +115,17 @@ class ANSITextFormatter:
             codes.append(self._get_code("bg", self.bg_color))
 
         ansi_code = f"\033[{';'.join(codes)}m" if codes else ""
-        return f"{ansi_code}{self.text}\033[0m"
+        return f"{ansi_code}{formatted_text}\033[0m"
 
 
 # Example usage
 if __name__ == "__main__":
     formatter = ANSITextFormatter(
-        text="Hello, World!", fg_color="cyan", bg_color="magenta", bold=True
+        text=123.456,
+        fg_color="cyan",
+        bg_color="magenta",
+        bold=True,
+        width=8,
+        precision=2,
     )
-
     print(formatter.format_text())

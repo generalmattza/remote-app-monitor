@@ -47,7 +47,29 @@ class MonitorManager:
                 element.update(*args)
                 break
 
-    def update_all_elements(self):
+    def generate_element_id_map(self):
+        """Generate a list of all element IDs in the monitor manager."""
+        element_count = 0
+
+        def _element_id_generator(elements):
+            """Recursively generate element IDs."""
+            nonlocal element_count
+            for element in elements:
+                if isinstance(element, MonitorGroup):
+                    yield from _element_id_generator(element.elements.values())
+                else:
+                    yield element_count, element.element_id
+                    element_count += 1
+
+        return {
+            str(number): element_id
+            for number, element_id in _element_id_generator(self.elements)
+        }
+
+
+class TerminalManager(MonitorManager):
+
+    def update_screen_buffer(self):
         """Construct the full screen content in a buffer"""
         self.buffer = []  # Clear the buffer for the new frame
 
@@ -73,42 +95,67 @@ class MonitorManager:
             self.update_screen()  # Display the current metrics
             await asyncio.sleep(1 / frequency)  # Wait for the next update cycle
 
-    async def update_all_elements_fixed_rate(self, frequency=1):
+    async def update_screen_buffer_fixed_rate(self, frequency=1):
         """Asynchronously update all elements at a fixed rate."""
         assert frequency > 0, "Frequency must be greater than 0."
         while True:
-            self.update_all_elements()
+            self.update_screen_buffer()
             await asyncio.sleep(1 / frequency)
 
     async def update_fixed_rate(self, frequency=30):
         await asyncio.gather(
             self.update_screen_fixed_rate(frequency=frequency),
-            self.update_all_elements_fixed_rate(frequency=frequency),
+            self.update_screen_buffer_fixed_rate(frequency=frequency),
         )
 
-    def generate_element_id_map(self):
-        """Generate a list of all element IDs in the monitor manager."""
-        element_count = 0
 
-        def _element_id_generator(elements):
-            """Recursively generate element IDs."""
-            nonlocal element_count
-            for element in elements:
-                if isinstance(element, MonitorGroup):
-                    yield from _element_id_generator(element.elements.values())
-                else:
-                    yield element_count, element.element_id
-                    element_count += 1
+import asyncio
+import json
+from flask_socketio import SocketIO
 
-        return {
-            str(number): element_id
-            for number, element_id in _element_id_generator(self.elements)
-        }
+
+class SocketManager(MonitorManager):
+    """Subclass of MonitorManager that adds functionality to push data to a WebSocket."""
+
+    def __init__(self, socketio: SocketIO, frequency=1):
+        """
+        Initialize with a SocketIO instance and a push frequency.
+
+        :param socketio: SocketIO instance to handle WebSocket communication.
+        :param frequency: Frequency in Hz for pushing updates to clients.
+        """
+        super().__init__()  # Initialize the parent MonitorManager
+        self.socketio = socketio
+        self.frequency = frequency
+
+    def to_json(self):
+        """Convert all monitor elements to JSON format."""
+        data = {}
+        for element in self.elements:
+            if isinstance(element, MonitorGroup):
+                data[element.group_id] = {
+                    e_id: el.display() for e_id, el in element.elements.items()
+                }
+            else:
+                data[element.element_id] = element.display()
+        return json.dumps(data)
+
+    async def push_data(self):
+        """Asynchronously push data to all connected WebSocket clients at the specified frequency."""
+        while True:
+            data = self.to_json()  # Get data in JSON format
+            self.socketio.emit("update", data)  # Push data to WebSocket clients
+            await asyncio.sleep(1 / self.frequency)  # Control push frequency
+
+    def set_frequency(self, frequency):
+        """Set the frequency at which data is pushed to clients."""
+        assert frequency > 0, "Frequency must be greater than 0."
+        self.frequency = frequency
 
 
 async def main():
     # Create a MonitorManager instance
-    manager = MonitorManager()
+    manager = TerminalManager()
 
     # Add a text element and a progress bar
     text = TextElement("Buffers")
