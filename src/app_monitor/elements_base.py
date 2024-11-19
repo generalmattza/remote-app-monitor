@@ -19,12 +19,12 @@ class MonitorElement:
 
     id_generator = id_generator("element")
 
-    def __init__(self, element_id=None, border=False, width=MAX_MONITOR_WIDTH):
+    def __init__(self, element_id=None, border=False, width=None):
         self.element_id = (
             element_id or self.get_unique_id()
         )  # Assign a unique ID to each element
         self.border = border
-        self.width = width
+        self.width = MAX_MONITOR_WIDTH if width is None else width
 
     def display(self):
         raise NotImplementedError("Subclasses must implement the display method")
