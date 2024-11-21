@@ -101,6 +101,12 @@ monitor.add_range_bar("X.torque", min_val=0, max_val=500)
 monitor.add_log("X.status", timestamp=True)
 ```
 
+### Example: Socket Based Remote Monitor
+
+The SocketManager class can be used to push data to a socket that can be fed to a service such as an HTML page.
+See the file [html_monitor_example.py](https://github.com/davidson-engineering/remote-app-monitor/blob/f40e98c6b4bc729f2f2e2dbddc4e4c305bfd0a42/html_monitor_example.py)
+<img width="863" alt="image" src="https://github.com/user-attachments/assets/25d4d863-92a9-4207-bdc9-0849cbb3f10c">
+
 ## Customization
 
 Each monitor element can be customized with parameters during initialization:
