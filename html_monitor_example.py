@@ -2,18 +2,21 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO
 import asyncio
 import threading
+import logging
 
 from app_monitor import SocketManager
 from app_monitor.server import OrderedDecoder, SerialUpdateServer
-from app_monitor.elements_base import TextElement
+from app_monitor.elements_base import TextElement, MachineState
 from app_monitor.text_formatter import TextFormat
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
 socketio = SocketIO(app)
 
 # Initialize SocketManager with Flask-SocketIO instance
-manager = SocketManager(socketio=socketio, frequency=20)  # 20Hz update rate
+manager = SocketManager(socketio=socketio, frequency=10)  # 20Hz update rate
 
 text_format = TextFormat(width=9, precision=3, force_sign=True)
 
@@ -33,11 +36,25 @@ data_formats = {
     "motor4_speed": None,
     "motor4_torque": None,
     "motor4_status": None,
+    "machine_status": None,
 }
+
+machine_states = [
+    "deadman_switch",
+    "motors_enabled",
+    "emergency_stop",
+    "rapid_traverse",
+    "fine_control",
+    "machine_mode",
+]
+
 # Define and add elements to the manager
 for name, format in data_formats.items():
-    text_element = TextElement(element_id=name, text_format=format)
-    manager.add_element(text_element)
+    if name == "machine_status":
+        element = MachineState(element_id=name, states=machine_states)
+    else:
+        element = TextElement(element_id=name, text_format=format)
+    manager.add_element(element)
 
 # Set up the Serial Update Server
 server = SerialUpdateServer(

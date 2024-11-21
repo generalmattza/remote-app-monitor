@@ -127,14 +127,16 @@ class SocketManager(MonitorManager):
 
     def to_json(self):
         """Convert all monitor elements to JSON format."""
-        data = {}
+        data = []
         for element in self.elements:
             if isinstance(element, MonitorGroup):
-                data[element.group_id] = {
-                    e_id: el.display() for e_id, el in element.elements.items()
-                }
+                raise NotImplementedError(
+                    "MonitorGroup is not supported in JSON format."
+                )
             else:
-                data[element.element_id] = element.display()
+                data.append(element.as_dict())
+        # Merge and flatten all element dict objects into a single JSON object
+        data = {key: value for element in data for key, value in element.items()}
         return json.dumps(data)
 
     async def push_data(self):
