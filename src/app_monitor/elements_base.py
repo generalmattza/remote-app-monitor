@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime
 from tabulate import tabulate
 
@@ -32,6 +33,10 @@ class MonitorElement:
     def update(self, data):
         """Update element with data."""
         raise NotImplementedError("Subclasses must implement the update method")
+
+    def as_dict(self):
+        """Return the element as a dictionary."""
+        return {self.element_id: self.display()}
 
     def add_border(self, content):
         """Wrap content in a simple border if self.border is True."""
@@ -79,7 +84,9 @@ class MonitorGroup(MonitorElement):
         element_displays = "\n".join(
             element.display() for element in self.elements.values()
         )
-        return self.add_border(element_displays)
+        if self.border:
+            return self.add_border(element_displays)
+        return element_displays
 
     def add_border(self, content):
         """Wrap the content of the group in a border with a group ID as a header."""
@@ -134,11 +141,6 @@ class TextElement(MonitorElement):
         )
 
         return full_text
-
-        # # Format the text with padding
-        # padded_text = full_text.ljust(self.width)
-
-        # return self.add_border(padded_text)
 
     def get_height(self):
         """Calculate the number of lines the text element occupies."""
@@ -477,3 +479,61 @@ class LogMonitor(MonitorElement):
         bordered_content = [f"| {line} |" for line in lines]
         border_bottom = "+" + "-" * (self.width - 2) + "+"
         return "\n".join([header_line] + bordered_content + [border_bottom])
+
+
+class IndicatorLamp(MonitorElement):
+    """Class for rendering an indicator lamp element."""
+
+    id_generator = id_generator("lamp")
+
+    def __init__(
+        self,
+        element_id=None,
+        label="Lamp",
+        on_color="green",
+        off_color="red",
+        width=MAX_MONITOR_WIDTH,
+    ):
+        super().__init__(element_id)
+        self.label = label
+        self.on_color = on_color
+        self.off_color = off_color
+        self.width = width
+        self.state = False
+
+    def update(self, state):
+        """Update the indicator lamp state."""
+        self.state = bool(state)
+
+    def display(self):
+        """Generate the indicator lamp for display."""
+        color = self.on_color if self.state else self.off_color
+        return f"{self.label}: \033[1;{color}m●\033[0m".ljust(self.width)
+
+    def as_dict(self):
+        return {self.element_id: self.state}
+
+    def get_height(self):
+        """Indicator lamp only occupies one line."""
+        return 1
+
+
+class MachineState(MonitorElement):
+
+    def __init__(self, element_id=None, states: list[str] = None):
+        super().__init__(element_id)
+        self.states = states or []
+        self.state_binary = "0" * len(self.states)
+
+    def update(self, state):
+        # Convert state from int32_t to binary string
+        self.state_binary = format(int(state), "032b")[::-1]
+        # Unpack state binary string into individual element states
+
+    def display(self):
+        return self.state_binary
+
+    def as_dict(self):
+        return {
+            state: bool(int(bit)) for state, bit in zip(self.states, self.state_binary)
+        }
