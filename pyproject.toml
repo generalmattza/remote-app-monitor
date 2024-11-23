@@ -41,7 +41,7 @@ version = { attr = "app_monitor.__version__" }
 
 
 [project.optional-dependencies]
-test = ["pytest >= 7.1.1"]
+test = ["pytest >= 8"]
 
 
 [tool.pytest.ini_options]

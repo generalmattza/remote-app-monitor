@@ -28,11 +28,7 @@ class MonitorManager:
     def add_element_group(self, group_id, elements):
         """Add a group of elements to the manager by creating a MonitorGroup."""
         # Automatically set hierarchical IDs based on the group_id
-        group_elements = {
-            f"{group_id}.{element.element_id}": element
-            for element in deepcopy(elements)
-        }
-        group = MonitorGroup(group_id=group_id, elements=group_elements, border=True)
+        group = MonitorGroup(group_id=group_id, elements=elements, border=True)
         self.elements.append(group)  # Add the whole group as one element
 
     def update(self, element_id, *args):
