@@ -49,10 +49,12 @@ def read_serial_data(ser):
             print("Error: Start byte not found. Invalid packet.")
 
 
-# Connect to serial port
-# ser = serial.Serial('/dev/ttyUSB0', 9600)
-# Connect to serial port
-ser = serial.Serial("/dev/tty.usbserial-1450", 115200)
+if __name__ == "__main__":
 
-while True:
-    read_serial_data(ser)
+    # Connect to serial port
+    # ser = serial.Serial('/dev/ttyUSB0', 9600)
+    # Connect to serial port
+    ser = serial.Serial("/dev/tty.usbserial-1450", 115200)
+
+    while True:
+        read_serial_data(ser)

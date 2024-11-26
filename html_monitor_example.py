@@ -46,6 +46,7 @@ machine_states = [
     "rapid_traverse",
     "fine_control",
     "machine_mode",
+    "test_incorrect",
 ]
 
 # Define and add elements to the manager
