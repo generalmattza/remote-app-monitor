@@ -90,3 +90,34 @@ class ScaledTextElementSettings(TextElementSettings):
             scale=self.scale,
             text_format=self.text_format,
         )
+
+
+# Machine state class
+class MachineState(MonitorElement):
+    """Class for rendering machine states using binary values."""
+
+    def __init__(self, element_id=None, states=None):
+        """
+        Initialize a MachineState.
+
+        Args:
+            states (list): List of state names.
+        """
+        super().__init__(element_id)
+        self.states = states or []
+        self.state_binary = "0" * len(self.states)
+
+    def update(self, state):
+        """Update the state with a new binary value."""
+        self.state_binary = format(int(state), "032b")
+
+    def display(self):
+        """Render the machine state binary string."""
+        return self.state_binary
+
+    def as_dict(self):
+        """Convert the binary state to a dictionary of named states."""
+        return {
+            state: bool(int(bit))
+            for state, bit in zip(self.states, self.state_binary[::-1])
+        }
