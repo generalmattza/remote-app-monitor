@@ -166,3 +166,19 @@ class StructDecoder(Decoder):
         if self.data_keys:
             packet = dict(zip(self.data_keys, packet))
         return packet
+
+class Validator:
+    @abstractmethod
+    def validate(self, packet): ...
+
+class WindowValidator(Validator):
+    def __init__(self, window_size=10, start_byte=0xA5, end_byte=0x5A):
+        self.window_size = window_size
+        self.start_byte = start_byte
+        self.end_byte = end_byte
+
+    def validate(self, packet):
+        if len(packet) == self.window_size and packet[0] == self.start_byte and packet[-1] == self.end_byte:
+            # Return packet without start and end bytes
+            return packet[1:-1]
+        return False
