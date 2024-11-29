@@ -65,6 +65,7 @@ class SerialUpdateServer(UpdateServer):
         port="/dev/ttyUSB0",
         baudrate=9600,
         decoder=None,
+        validator=None,
     ):
         super().__init__(monitor_manager)
         if serial_instance:
@@ -77,6 +78,7 @@ class SerialUpdateServer(UpdateServer):
         self.port = self.serial_connection.port
         self.baudrate = self.serial_connection.baudrate
         self.decoder = decoder
+        self.validator = validator
 
     def detect_devices(
         self,
@@ -116,9 +118,12 @@ class SerialUpdateServer(UpdateServer):
                 if self.serial_connection.in_waiting:
                     # Read available data on the serial port
                     if data := self.serial_connection.readline():
-                        if self.decoder:
+                        if self.validator:
+                            data = self.validator.validate(data)
+                        if self.decoder and data:
                             data = self.decoder.decode(data)
-                        self.process_update(data)
+                        if data:
+                            self.process_update(data)
                 await asyncio.sleep(1 / frequency)
 
         except Exception as e:
@@ -166,6 +171,7 @@ class StructDecoder(Decoder):
         if self.data_keys:
             packet = dict(zip(self.data_keys, packet))
         return packet
+
 
 class Validator:
     @abstractmethod
