@@ -4,7 +4,7 @@ import zmq
 import zmq.asyncio
 import serial
 import struct
-
+from collections import OrderedDecoder
 from .logger import logger
 
 
@@ -157,7 +157,7 @@ class OrderedDecoder(Decoder):
 
     def decode(self, packet):
         data = packet.decode("utf-8").strip().split(self.separator)
-        return dict(zip(self.keys, data))
+        return OrderedDecoder(zip(self.keys, data))
 
 
 class StructDecoder(Decoder):
@@ -169,7 +169,7 @@ class StructDecoder(Decoder):
         if self.packet_format:
             packet = struct.unpack(self.packet_format, packet)
         if self.data_keys:
-            packet = dict(zip(self.data_keys, packet))
+            packet = OrderedDecoder(zip(self.data_keys, packet))
         return packet
 
 
