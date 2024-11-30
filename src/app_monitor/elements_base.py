@@ -34,7 +34,7 @@ class MonitorElement:
         """
         self.element_id = element_id or self.get_unique_id()
         self.border = border
-        self.width = width
+        self.width = MAX_MONITOR_WIDTH if width is None else width
 
     def display(self):
         """Render the monitor element for display."""

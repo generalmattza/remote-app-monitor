@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.4"
 
 
 from .app_monitor import TerminalManager, SocketManager
