@@ -6,176 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robotic Control Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
-    <!-- Use a consistent font for all elements -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto Mono', monospace;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            flex-direction: column;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f9;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .section {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #ffffff;
-            width: 100%;
-            max-width: 800px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .position-display {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            align-items: flex-start;
-        }
-
-        .position-row {
-            display: flex;
-            align-items: center;
-            font-size: 4rem;
-        }
-
-        .axis-label {
-            font-weight: bold;
-            margin-right: 10px;
-            min-width: 50px;
-            text-align: left;
-        }
-
-        .value {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .unit {
-            font-size: 3rem;
-            color: #555;
-            margin-left: 10px;
-        }
-
-        .led-container {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 15px;
-            margin-left: 20px;
-        }
-
-        .led-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .led {
-            width: 25px;
-            height: 25px;
-            background-color: #555;
-            border-radius: 50%;
-            box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.7);
-        }
-
-        .led.on {
-            background-color: #00d207;
-            /* Green color when on */
-            box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.7), 0 0 8px #69fa6e;
-            /* Glow */
-        }
-
-        .led-label {
-            font-weight: normal;
-            text-transform: uppercase;
-        }
-
-        .motor-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        .motor {
-            border: 1px solid #ccc;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: left;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            font-family: 'Roboto', sans-serif;
-            font-size: 1rem;
-            position: relative;
-        }
-
-        .metric {
-            font-size: 1rem;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .metric .label {
-            font-weight: bold;
-            color: #333;
-        }
-
-        .status {
-            font-size: 0.9rem;
-            color: #888;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        /* Torque bar style */
-        .torque-bar-container {
-            width: 100%;
-            height: 10px;
-            background-color: #eee;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .torque-bar {
-            height: 100%;
-            background-color: #4caf50;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-    </style>
+    <link rel="stylesheet" href="../static/styles.css">
 </head>
 
 <body>
     <!-- Position Display and LED Indicators Section -->
     <div class="section">
-        <div class="position-display">
-            <div class="position-row">
-                <div class="axis-label">X:</div>
-                <div class="value" id="posX">0</div>
-                <div class="unit">mm</div>
+        <div class="labels">
+            <div>X</div>
+            <div>Y</div>
+            <div>Z</div>
+        </div>
+        <div class="position-display lcd-display">
+            <div class="lcd-display-layer lcd-display-dimmed">
+                <span class="lcd-char-dim">~~~~~~.~~~</span>
+                <span class="lcd-char-dim">~~~~~~.~~~</span>
+                <span class="lcd-char-dim">~~~~~~.~~~</span>
             </div>
-            <div class="position-row">
-                <div class="axis-label">Y:</div>
-                <div class="value" id="posY">0</div>
-                <div class="unit">mm</div>
-            </div>
-            <div class="position-row">
-                <div class="axis-label">Z:</div>
-                <div class="value" id="posZ">0</div>
-                <div class="unit">mm</div>
+            <div class="lcd-display-layer">
+                <span id="posX">+00000.000</span>
+                <span id="posY">+00000.000</span>
+                <span id="posZ">+00000.000</span>
             </div>
         </div>
 
@@ -210,43 +61,90 @@
 
     <!-- Motor Control Section -->
     <div class="section">
-        <div class="motor-container" id="motorContainer">
-            <div class="motor" id="motor1">
-                <div class="metric"><span class="label">Speed:</span> <span id="motor1-speed">0</span> RPM</div>
-                <div class="metric"><span class="label">Torque:</span> <span id="motor1-torque">0</span> %</div>
-                <div class="torque-bar-container">
-                    <div class="torque-bar" id="motor1-torque-bar"></div>
+        <div class="labels labels-metrics">
+            <div>VEL</div>
+            <div>TRQ</div>
+            <div>STS</div>
+            <div>FLT</div>
+        </div>
+        <div class="metrics-display lcd-display" id="motorContainer">
+            <div class="metrics" id="motor1">
+                <div class="lcd-display-layer lcd-display-dimmed">
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
                 </div>
-                <div class="status" id="motor1-status">Status: OK</div>
+                <div class="lcd-display-layer">
+                    <span id="motor1-speed">~~~~~~</span>
+                    <span id="motor1-torque">~~~~~~~~</span>
+                    <span id="motor1-status">ABCDEF</span>
+                    <span id="motor1-faults">ABCDEF</span>
+                </div>
             </div>
-            <div class="motor" id="motor2">
-                <div class="metric"><span class="label">Speed:</span> <span id="motor2-speed">0</span> RPM</div>
-                <div class="metric"><span class="label">Torque:</span> <span id="motor2-torque">0</span> %</div>
-                <div class="torque-bar-container">
-                    <div class="torque-bar" id="motor2-torque-bar"></div>
+            <div class="metrics" id="motor1">
+                <div class="lcd-display-layer lcd-display-dimmed">
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
                 </div>
-                <div class="status" id="motor2-status">Status: OK</div>
+                <div class="lcd-display-layer">
+                    <span id="motor1-speed">~~~~~~</span>
+                    <span id="motor1-torque">~~~~~~~~~</span>
+                    <span id="motor1-status">ABCDEF</span>
+                    <span id="motor1-faults">ABCDEF</span>
+                </div>
             </div>
-            <div class="motor" id="motor3">
-                <div class="metric"><span class="label">Speed:</span> <span id="motor3-speed">0</span> RPM</div>
-                <div class="metric"><span class="label">Torque:</span> <span id="motor3-torque">0</span> %</div>
-                <div class="torque-bar-container">
-                    <div class="torque-bar" id="motor3-torque-bar"></div>
+            <div class="metrics" id="motor1">
+                <div class="lcd-display-layer lcd-display-dimmed">
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
                 </div>
-                <div class="status" id="motor3-status">Status: OK</div>
+                <div class="lcd-display-layer">
+                    <span id="motor1-speed">~~~~~~</span>
+                    <span id="motor1-torque">~~~~~~~~~</span>
+                    <span id="motor1-status">ABCDEF</span>
+                    <span id="motor1-faults">ABCDEF</span>
+                </div>
             </div>
-            <div class="motor" id="motor4">
-                <div class="metric"><span class="label">Speed:</span> <span id="motor4-speed">0</span> RPM</div>
-                <div class="metric"><span class="label">Torque:</span> <span id="motor4-torque">0</span> %</div>
-                <div class="torque-bar-container">
-                    <div class="torque-bar" id="motor4-torque-bar"></div>
+            <div class="metrics" id="motor1">
+                <div class="lcd-display-layer lcd-display-dimmed">
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    <span class="lcd-char-dim">~~~~~~~~~~</span>
                 </div>
-                <div class="status" id="motor4-status">Status: OK</div>
+                <div class="lcd-display-layer">
+                    <span id="motor1-speed">~~~~~~</span>
+                    <span id="motor1-torque">~~~~~~~~~</span>
+                    <span id="motor1-status">ABCDEF</span>
+                    <span id="motor1-faults">ABCDEF</span>
+                </div>
             </div>
         </div>
     </div>
-
+    <!-- <script src="/templates/js/script.js"></script> -->
     <script>
+        // function fillWithCharacters() {
+        //     const rows = document.querySelectorAll('.lcd-char-dim'); // Get all rows
+        //     rows.forEach(row => {
+        //         const parentWidth = row.parentElement.clientWidth; // Get parent width
+        //         const charWidth = 10; // Approximate width of a monospace character (adjust as needed)
+        //         const numChars = Math.floor(parentWidth / charWidth); // Calculate the number of ~ to fit
+        //         row.textContent = '~'.repeat(numChars); // Fill with ~
+        //     });
+        // }
+
+        // // Call the function on page load
+        // window.addEventListener('load', fillWithCharacters);
+
+        // // Recalculate on window resize
+        // window.addEventListener('resize', fillWithCharacters);
+
+
         const socket = io();
         const maxTorque = 100; // Define maximum torque value for scaling
 
@@ -281,17 +179,17 @@
                 document.getElementById(`motor${i}-torque`).textContent = torque;
                 document.getElementById(`motor${i}-status`).textContent = `Status: ${status}`;
 
-                // Set the width and color of the torque bar based on the torque value
-                const torqueBar = document.getElementById(`motor${i}-torque-bar`);
-                const torquePercentage = Math.min(100, (torque / maxTorque) * 100);
-                torqueBar.style.width = `${torquePercentage}%`;
+                // // Set the width and color of the torque bar based on the torque value
+                // const torqueBar = document.getElementById(`motor${i}-torque-bar`);
+                // const torquePercentage = Math.min(100, (torque / maxTorque) * 100);
+                // torqueBar.style.width = `${torquePercentage}%`;
 
-                // Change color to red if torque exceeds 80% of maxTorque
-                if (torquePercentage > 80) {
-                    torqueBar.style.backgroundColor = 'red';
-                } else {
-                    torqueBar.style.backgroundColor = '#4caf50'; // Default green color
-                }
+                // // Change color to red if torque exceeds 80% of maxTorque
+                // if (torquePercentage > 80) {
+                //     torqueBar.style.backgroundColor = 'red';
+                // } else {
+                //     torqueBar.style.backgroundColor = '#4caf50'; // Default green color
+                // }
             }
         });
     </script>

@@ -24,8 +24,9 @@
 
         .section {
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
             padding: 20px;
             border: 1px solid #ccc;
             border-radius: 8px;
@@ -46,8 +47,6 @@
             display: flex;
             align-items: center;
             font-size: 4rem;
-
-            /* Set uniform font size */
         }
 
         .axis-label {
@@ -68,6 +67,40 @@
             margin-left: 10px;
         }
 
+        .led-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+            margin-left: 20px;
+        }
+
+        .led-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .led {
+            width: 25px;
+            height: 25px;
+            background-color: #555;
+            border-radius: 50%;
+            box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.7);
+        }
+
+        .led.on {
+            background-color: #00d207;
+            /* Green color when on */
+            box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.7), 0 0 8px #69fa6e;
+            /* Glow */
+        }
+
+        .led-label {
+            font-weight: normal;
+            text-transform: uppercase;
+        }
+
         .motor-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -84,9 +117,7 @@
             flex-direction: column;
             gap: 5px;
             font-family: 'Roboto', sans-serif;
-            /* Uniform font */
             font-size: 1rem;
-            /* Uniform font size */
             position: relative;
         }
 
@@ -121,18 +152,14 @@
         .torque-bar {
             height: 100%;
             background-color: #4caf50;
-            /* Green bar */
             width: 0%;
-            /* Dynamic width based on torque */
             transition: width 0.3s ease;
-            /* Smooth transition */
         }
     </style>
 </head>
 
 <body>
-
-    <!-- Position Display Section -->
+    <!-- Position Display and LED Indicators Section -->
     <div class="section">
         <div class="position-display">
             <div class="position-row">
@@ -149,6 +176,34 @@
                 <div class="axis-label">Z:</div>
                 <div class="value" id="posZ">0</div>
                 <div class="unit">mm</div>
+            </div>
+        </div>
+
+        <!-- LED Indicators Column -->
+        <div class="led-container">
+            <div class="led-wrapper">
+                <div class="led" id="led-deadman-switch"></div>
+                <div class="led-label">Deadman Switch</div>
+            </div>
+            <div class="led-wrapper">
+                <div class="led" id="led-motors-enabled"></div>
+                <div class="led-label">Motors Enabled</div>
+            </div>
+            <div class="led-wrapper">
+                <div class="led" id="led-emergency-stop"></div>
+                <div class="led-label">Emergency Stop</div>
+            </div>
+            <div class="led-wrapper">
+                <div class="led" id="led-rapid-traverse"></div>
+                <div class="led-label">Rapid Traverse</div>
+            </div>
+            <div class="led-wrapper">
+                <div class="led" id="led-fine-control"></div>
+                <div class="led-label">Fine Control</div>
+            </div>
+            <div class="led-wrapper">
+                <div class="led" id="led-machine-mode"></div>
+                <div class="led-label">Machine Mode</div>
             </div>
         </div>
     </div>
@@ -195,11 +250,23 @@
         const socket = io();
         const maxTorque = 100; // Define maximum torque value for scaling
 
-        // Update the positions and motor metrics when data is received from the server
+        // Update the positions, motor metrics, and LED indicators when data is received from the server
         socket.on('update', function (data) {
             const parsedData = JSON.parse(data);
 
-            // Display raw values for position
+            // Update LED indicators based on data (accept True/False, true/false, or 1/0 as inputs)
+            function parseBoolean(value) {
+                return value === true || value === 1 || value === "True" || value === "true";
+            }
+
+            document.getElementById('led-deadman-switch').className = parseBoolean(parsedData['deadman_switch']) ? 'led on' : 'led off';
+            document.getElementById('led-motors-enabled').className = parseBoolean(parsedData['motors_enabled']) ? 'led on' : 'led off';
+            document.getElementById('led-emergency-stop').className = parseBoolean(parsedData['emergency_stop']) ? 'led on' : 'led off';
+            document.getElementById('led-rapid-traverse').className = parseBoolean(parsedData['rapid_traverse']) ? 'led on' : 'led off';
+            document.getElementById('led-fine-control').className = parseBoolean(parsedData['fine_control']) ? 'led on' : 'led off';
+            document.getElementById('led-machine-mode').className = parseBoolean(parsedData['machine_mode']) ? 'led on' : 'led off';
+
+            // Update position values
             document.getElementById('posX').textContent = parsedData['position_x'];
             document.getElementById('posY').textContent = parsedData['position_y'];
             document.getElementById('posZ').textContent = parsedData['position_z'];
@@ -228,7 +295,6 @@
             }
         });
     </script>
-
 </body>
 
 </html>

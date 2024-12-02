@@ -6,7 +6,8 @@ import logging
 
 from app_monitor import SocketManager
 from app_monitor.server import OrderedDecoder, SerialUpdateServer
-from app_monitor.elements_base import TextElement, MachineState
+from app_monitor.elements_base import TextElement
+from app_monitor.elements_advanced import MachineState
 from app_monitor.text_formatter import TextFormat
 
 logging.basicConfig(level=logging.INFO)

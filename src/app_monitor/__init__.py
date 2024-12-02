@@ -10,5 +10,5 @@ from .elements_base import (
     LogMonitor,
     MonitorGroup,
 )
-from .elements_advanced import CoordinateTextElement
+from .elements_advanced import CoordinateTextElement, MachineState
 from .server import ZeroMQUpdateServer, SerialUpdateServer
