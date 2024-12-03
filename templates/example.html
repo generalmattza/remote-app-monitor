@@ -15,10 +15,12 @@
         <div class="labels">
             <div>X</div>
             <div>Y</div>
-            <div>Z</div>
+            <div>Z0</div>
+            <div>Z1</div>
         </div>
         <div class="position-display lcd-display">
             <div class="lcd-display-layer lcd-display-dimmed">
+                <span class="lcd-char-dim">~~~~~~.~~~</span>
                 <span class="lcd-char-dim">~~~~~~.~~~</span>
                 <span class="lcd-char-dim">~~~~~~.~~~</span>
                 <span class="lcd-char-dim">~~~~~~.~~~</span>
@@ -26,7 +28,8 @@
             <div class="lcd-display-layer">
                 <span id="posX">+00000.000</span>
                 <span id="posY">+00000.000</span>
-                <span id="posZ">+00000.000</span>
+                <span id="posZ0">+00000.000</span>
+                <span id="posZ1">+00000.000</span>
             </div>
         </div>
 
@@ -60,90 +63,81 @@
     </div>
 
     <!-- Motor Control Section -->
-    <div class="section">
+    <div class="section section-metrics">
         <div class="labels labels-metrics">
             <div>VEL</div>
             <div>TRQ</div>
             <div>STS</div>
             <div>FLT</div>
         </div>
-        <div class="metrics-display lcd-display" id="motorContainer">
-            <div class="metrics" id="motor1">
-                <div class="lcd-display-layer lcd-display-dimmed">
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                </div>
-                <div class="lcd-display-layer">
-                    <span id="motor1-speed">~~~~~~</span>
-                    <span id="motor1-torque">~~~~~~~~</span>
-                    <span id="motor1-status">ABCDEF</span>
-                    <span id="motor1-faults">ABCDEF</span>
-                </div>
+        <div>
+            <div class="labels labels-metrics labels-metrics-horizontal">
+                <div>MOTOR1</div>
+                <div>MOTOR2</div>
+                <div>MOTOR3</div>
+                <div>MOTOR4</div>
             </div>
-            <div class="metrics" id="motor1">
-                <div class="lcd-display-layer lcd-display-dimmed">
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+            <div class="metrics-display lcd-display" id="motorContainer">
+                <div class="metrics" id="motor1">
+                    <div class="lcd-display-layer lcd-display-dimmed">
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    </div>
+                    <div class="lcd-display-layer">
+                        <span id="motor1-speed">~~~~~~</span>
+                        <span id="motor1-torque">~~~~~~~~</span>
+                        <span id="motor1-status">ABCDEF</span>
+                        <span id="motor1-faults">ABCDEF</span>
+                    </div>
                 </div>
-                <div class="lcd-display-layer">
-                    <span id="motor1-speed">~~~~~~</span>
-                    <span id="motor1-torque">~~~~~~~~~</span>
-                    <span id="motor1-status">ABCDEF</span>
-                    <span id="motor1-faults">ABCDEF</span>
+                <div class="metrics" id="motor1">
+                    <div class="lcd-display-layer lcd-display-dimmed">
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    </div>
+                    <div class="lcd-display-layer">
+                        <span id="motor1-speed">~~~~~~</span>
+                        <span id="motor1-torque">~~~~~~~~~</span>
+                        <span id="motor1-status">ABCDEF</span>
+                        <span id="motor1-faults">ABCDEF</span>
+                    </div>
                 </div>
-            </div>
-            <div class="metrics" id="motor1">
-                <div class="lcd-display-layer lcd-display-dimmed">
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
+                <div class="metrics" id="motor1">
+                    <div class="lcd-display-layer lcd-display-dimmed">
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    </div>
+                    <div class="lcd-display-layer">
+                        <span id="motor1-speed">~~~~~~</span>
+                        <span id="motor1-torque">~~~~~~~~~</span>
+                        <span id="motor1-status">ABCDEF</span>
+                        <span id="motor1-faults">ABCDEF</span>
+                    </div>
                 </div>
-                <div class="lcd-display-layer">
-                    <span id="motor1-speed">~~~~~~</span>
-                    <span id="motor1-torque">~~~~~~~~~</span>
-                    <span id="motor1-status">ABCDEF</span>
-                    <span id="motor1-faults">ABCDEF</span>
-                </div>
-            </div>
-            <div class="metrics" id="motor1">
-                <div class="lcd-display-layer lcd-display-dimmed">
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                    <span class="lcd-char-dim">~~~~~~~~~~</span>
-                </div>
-                <div class="lcd-display-layer">
-                    <span id="motor1-speed">~~~~~~</span>
-                    <span id="motor1-torque">~~~~~~~~~</span>
-                    <span id="motor1-status">ABCDEF</span>
-                    <span id="motor1-faults">ABCDEF</span>
+                <div class="metrics" id="motor1">
+                    <div class="lcd-display-layer lcd-display-dimmed">
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                        <span class="lcd-char-dim">~~~~~~~~~~</span>
+                    </div>
+                    <div class="lcd-display-layer">
+                        <span id="motor1-speed">~~~~~~</span>
+                        <span id="motor1-torque">~~~~~~~~~</span>
+                        <span id="motor1-status">ABCDEF</span>
+                        <span id="motor1-faults">ABCDEF</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <!-- <script src="/templates/js/script.js"></script> -->
     <script>
-        // function fillWithCharacters() {
-        //     const rows = document.querySelectorAll('.lcd-char-dim'); // Get all rows
-        //     rows.forEach(row => {
-        //         const parentWidth = row.parentElement.clientWidth; // Get parent width
-        //         const charWidth = 10; // Approximate width of a monospace character (adjust as needed)
-        //         const numChars = Math.floor(parentWidth / charWidth); // Calculate the number of ~ to fit
-        //         row.textContent = '~'.repeat(numChars); // Fill with ~
-        //     });
-        // }
-
-        // // Call the function on page load
-        // window.addEventListener('load', fillWithCharacters);
-
-        // // Recalculate on window resize
-        // window.addEventListener('resize', fillWithCharacters);
-
 
         const socket = io();
         const maxTorque = 100; // Define maximum torque value for scaling
@@ -167,7 +161,8 @@
             // Update position values
             document.getElementById('posX').textContent = parsedData['position_x'];
             document.getElementById('posY').textContent = parsedData['position_y'];
-            document.getElementById('posZ').textContent = parsedData['position_z'];
+            document.getElementById('posZ0').textContent = parsedData['position_z'];
+            document.getElementById('posZ1').textContent = parsedData['position_z'];
 
             // Update motor values and set torque bar width
             for (let i = 1; i <= 4; i++) {

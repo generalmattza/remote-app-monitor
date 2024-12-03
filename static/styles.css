@@ -23,15 +23,13 @@ body {
     justify-content: center;
     flex-direction: column;
     background-color: rgb(94, 99, 105);
-    margin-top: 30px;
     width: 1024px;
 }
 
 .section {
     display: flex;
     width: auto;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding-top: 15px;
     background:
     url('../static/textures/brushed-alumnium.png') no-repeat center center fixed; /* Background image */
     background-size: cover;
@@ -39,13 +37,18 @@ body {
     background-color: rgba(0, 0, 0, 0.2);
 }
 
+.section-metrics {
+    padding-top: 2px;
+    padding-bottom: 16px;
+}
+
 .labels {
     display: grid;
     flex-direction: column;
     text-align: right;
     align-items: center;
-    font-size: 3.6rem;
-    width: 5%;
+    font-size: 3rem;
+    width: 6%;
     font-family: 'Arial Narrow';
     font-weight: bold;
     color: white;
@@ -53,15 +56,29 @@ body {
     margin-right: 14px;
     -webkit-text-stroke: #181818 0.08rem;
     z-index: 1;
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
 
 
 .labels-metrics {
+    padding-top: 38px;
     font-size: 1.1rem;
     align-content: center;
     line-height: 1.5em;
     -webkit-text-stroke: #181818 0.04rem;
+}
 
+.labels-metrics-horizontal {
+    font-size: 1.3em;
+    padding-top: 0px;
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: 4px;
+    width: 100%;
 }
 
 
