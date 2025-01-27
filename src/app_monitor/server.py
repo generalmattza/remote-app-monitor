@@ -4,7 +4,7 @@ import zmq
 import zmq.asyncio
 import serial
 import struct
-
+from collections import OrderedDict
 from .logger import logger
 
 
@@ -65,6 +65,7 @@ class SerialUpdateServer(UpdateServer):
         port="/dev/ttyUSB0",
         baudrate=9600,
         decoder=None,
+        validator=None,
     ):
         super().__init__(monitor_manager)
         if serial_instance:
@@ -77,6 +78,7 @@ class SerialUpdateServer(UpdateServer):
         self.port = self.serial_connection.port
         self.baudrate = self.serial_connection.baudrate
         self.decoder = decoder
+        self.validator = validator
 
     def detect_devices(
         self,
@@ -116,9 +118,12 @@ class SerialUpdateServer(UpdateServer):
                 if self.serial_connection.in_waiting:
                     # Read available data on the serial port
                     if data := self.serial_connection.readline():
-                        if self.decoder:
+                        if self.validator:
+                            data = self.validator.validate(data)
+                        if self.decoder and data:
                             data = self.decoder.decode(data)
-                        self.process_update(data)
+                        if data:
+                            self.process_update(data)
                 await asyncio.sleep(1 / frequency)
 
         except Exception as e:
@@ -152,7 +157,7 @@ class OrderedDecoder(Decoder):
 
     def decode(self, packet):
         data = packet.decode("utf-8").strip().split(self.separator)
-        return dict(zip(self.keys, data))
+        return OrderedDict(zip(self.keys, data))
 
 
 class StructDecoder(Decoder):
@@ -164,5 +169,22 @@ class StructDecoder(Decoder):
         if self.packet_format:
             packet = struct.unpack(self.packet_format, packet)
         if self.data_keys:
-            packet = dict(zip(self.data_keys, packet))
+            packet = OrderedDict(zip(self.data_keys, packet))
         return packet
+
+
+class Validator:
+    @abstractmethod
+    def validate(self, packet): ...
+
+class WindowValidator(Validator):
+    def __init__(self, window_size=10, start_byte=0xA5, end_byte=0x5A):
+        self.window_size = window_size
+        self.start_byte = start_byte
+        self.end_byte = end_byte
+
+    def validate(self, packet):
+        if len(packet) == self.window_size and packet[0] == self.start_byte and packet[-1] == self.end_byte:
+            # Return packet without start and end bytes
+            return packet[1:-1]
+        return False
