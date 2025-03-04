@@ -62,6 +62,9 @@ class MonitorElement:
         """Generate a unique ID for monitor elements."""
         return next(self.id_generator)
 
+    def value(self):
+        raise NotImplementedError("Subclasses must implement the display method.")
+
 
 # Grouping class for monitor elements
 class MonitorGroup(MonitorElement):
@@ -180,6 +183,9 @@ class TextElement(MonitorElement):
     def get_height(self):
         """Calculate the number of lines the text occupies."""
         return self.text.count("\n") + 1
+    
+    def value(self):
+        return self.text
 
 
 # Progress bar class
@@ -246,6 +252,9 @@ class ProgressBar(MonitorElement):
     def get_height(self):
         """Progress bar occupies one line."""
         return 1
+    
+    def value(self):
+        return self.current_step
 
 
 # Range bar class
@@ -348,6 +357,8 @@ class RangeBar(MonitorElement):
         """Range bar occupies one line."""
         return 1
 
+    def value(self):
+        return self.current_value
 
 # Table class
 class Table(MonitorElement):
