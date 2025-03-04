@@ -1,10 +1,12 @@
 import asyncio
 from copy import deepcopy
+from datetime import datetime
 import sys
 import asyncio
 import json
 from flask_socketio import SocketIO
 
+from app_monitor.csv_logger import CSVLogger
 from app_monitor.elements_base import (
     ProgressBar,
     TextElement,
@@ -19,9 +21,11 @@ from .logger import logger
 class MonitorManager:
     """Main class to manage all monitor elements and updates asynchronously."""
 
-    def __init__(self):
+    def __init__(self, log_to_file_enabled=False):
         self.elements = []  # Store elements as a list to maintain their order
         self.buffer = []  # The off-screen buffer where all elements are written
+        self.logger = None  # CSV logger not yet initialized
+        self.log_to_file_enabled = log_to_file_enabled
 
     def add_element(self, element):
         """Add a monitor element to the manager."""
@@ -64,6 +68,43 @@ class MonitorManager:
             for number, element_id in _element_id_generator(self.elements)
         }
 
+    def init_csv_logger(self, filename="monitor_log.csv"):
+        # Generate header mapping based on all elements.
+        element_id_map = self.generate_element_id_map()
+        # Create a sorted list of element_ids (or use the mapping values)
+        fieldnames = ["Timestamp"] + [
+            eid
+            for _, eid in sorted(
+                ((int(num), eid) for num, eid in element_id_map.items())
+            )
+        ]
+        self.logger = CSVLogger(filename, fieldnames)
+
+    def log_current_state(self):
+        # Lazily initialize the CSV logger on first call if not already done.
+        if self.logger is None:
+            self.init_csv_logger()  # Initialize with default filename and columns
+
+        row_data = {}
+        row_data["Timestamp"] = datetime.now().isoformat()
+
+        def _gather_state(elements):
+            for element in elements:
+                if isinstance(element, MonitorGroup):
+                    _gather_state(element.elements.values())
+                else:
+                    row_data[element.element_id] = element.value
+
+        _gather_state(self.elements)
+        self.logger.log(row_data)
+
+    async def log_at_fixed_rate(self, frequency=1):
+        """Log the monitor state at a fixed rate."""
+        assert frequency > 0, "Frequency must be greater than 0."
+        while True:
+            self.log_current_state()
+            await asyncio.sleep(1 / frequency)
+
 
 class TerminalManager(MonitorManager):
 
@@ -104,6 +145,7 @@ class TerminalManager(MonitorManager):
         await asyncio.gather(
             self.update_screen_fixed_rate(frequency=frequency),
             self.update_screen_buffer_fixed_rate(frequency=frequency),
+            self.log_at_fixed_rate(frequency=5),
         )
 
 
