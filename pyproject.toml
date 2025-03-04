@@ -3,9 +3,9 @@ name = "remote-app-monitor"
 description = "A_short_description"
 
 # If a project, then you can specify version here
-# version = "0.0.1"
+version = "0.1.5"
 # If a module, then fetch version dynamically (see [tool.setuptools.dynamic] below)
-dynamic = ["version"]
+# dynamic = ["version"]
 
 readme = "README.md"
 requires-python = ">=3.9"
@@ -39,8 +39,8 @@ dependencies = [
 #py-modules = []
 
 # If a module, then use fetch version from src/module_name/__init__.py
-[tool.setuptools.dynamic]
-version = { attr = "app_monitor.__version__" }
+# [tool.setuptools.dynamic]
+# version = { attr = "app_monitor.__version__" }
 
 
 [project.optional-dependencies]
