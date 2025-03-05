@@ -3,7 +3,7 @@ name = "remote-app-monitor"
 description = "A_short_description"
 
 # If a project, then you can specify version here
-version = "0.1.5"
+version = "0.1.6"
 # If a module, then fetch version dynamically (see [tool.setuptools.dynamic] below)
 # dynamic = ["version"]
 
