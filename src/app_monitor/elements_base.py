@@ -2,8 +2,8 @@ from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime
 from tabulate import tabulate
-
-from .logger import logger
+from app_monitor.text_formatter import ANSITextFormatter
+from app_monitor.logger import logger
 
 # Maximum width for monitor elements
 MAX_MONITOR_WIDTH = 60
@@ -23,7 +23,7 @@ class MonitorElement:
 
     id_generator = id_generator("element")
 
-    def __init__(self, element_id=None, border=False, width=MAX_MONITOR_WIDTH):
+    def __init__(self, element_id=None, border=False, width=MAX_MONITOR_WIDTH, enabled=True):
         """
         Initialize a MonitorElement.
 
@@ -35,6 +35,8 @@ class MonitorElement:
         self.element_id = element_id or self.get_unique_id()
         self.border = border
         self.width = MAX_MONITOR_WIDTH if width is None else width
+        self.enabled = enabled
+ 
 
     def display(self):
         """Render the monitor element for display."""
@@ -73,7 +75,7 @@ class MonitorGroup(MonitorElement):
 
     id_generator = id_generator("group")
 
-    def __init__(self, group_id, elements=None, border=False, width=MAX_MONITOR_WIDTH):
+    def __init__(self, group_id, elements=None, border=False, width=MAX_MONITOR_WIDTH, enabled=True):
         """
         Initialize a MonitorGroup.
 
@@ -83,9 +85,8 @@ class MonitorGroup(MonitorElement):
             border (bool): Whether to display a border around the group.
             width (int): Maximum width for the group.
         """
-        super().__init__(element_id=group_id, border=border)
+        super().__init__(element_id=group_id, border=border, width=width, enabled=enabled)
         self.group_id = group_id
-        self.width = width
         self.elements = self.construct_elements(elements)
 
     def construct_elements(self, elements=None):
@@ -154,6 +155,7 @@ class TextElement(MonitorElement):
         element_id=None,
         text_format=None,
         width=MAX_MONITOR_WIDTH,
+        enabled=True,
     ):
         """
         Initialize a TextElement.
@@ -165,7 +167,7 @@ class TextElement(MonitorElement):
             text_format (Callable): Formatting function for text.
             width (int): Maximum width for the element.
         """
-        super().__init__(element_id, width=width)
+        super().__init__(element_id, width=width, enabled=enabled)
         self.text = str(text or "")
         self.static_text = static_text
         self.text_format = text_format
@@ -206,6 +208,7 @@ class ProgressBar(MonitorElement):
         text_format=None,
         display_value=None,
         max_label_length=None,
+        enabled=True,
     ):
         """
         Initialize a ProgressBar.
@@ -219,11 +222,10 @@ class ProgressBar(MonitorElement):
             display_value (str): Optional value to display with the bar.
             max_label_length (int): Maximum length for the label.
         """
-        super().__init__(element_id)
+        super().__init__(element_id, width=width, enabled=enabled)
         self.total_steps = total_steps
         self.current_step = 0
         self.label = label
-        self.width = width
         self.bar_format = bar_format
         self.text_format = text_format
         self.display_value = display_value
@@ -283,6 +285,7 @@ class RangeBar(MonitorElement):
         unit=None,
         scale=1,
         digits=2,
+        enabled=True,
     ):
         """
         Initialize a RangeBar.
@@ -303,12 +306,11 @@ class RangeBar(MonitorElement):
             scale (float): Scaling factor for the values.
             digits (int): Number of decimal places for the display value.
         """
-        super().__init__(element_id)
+        super().__init__(element_id, width=width, enabled=enabled)
         self.min_value = min_value
         self.max_value = max_value
         self.current_value = (max_value + min_value) / 2
         self.label = label
-        self.width = width
         self.bar_format = bar_format
         self.text_format = text_format
         self.display_value = display_value
@@ -381,6 +383,8 @@ class Table(MonitorElement):
         header_format=None,
         column_format=None,
         cell_format=None,
+        width=MAX_MONITOR_WIDTH,
+        enabled=True,
     ):
         """
         Initialize a Table.
@@ -394,7 +398,7 @@ class Table(MonitorElement):
             column_format (Callable): Formatting function for left column.
             cell_format (Callable): Formatting function for data cells.
         """
-        super().__init__(element_id)
+        super().__init__(element_id, width=width, enabled=enabled)
         self.headers = headers
         self.variables = variables
         self.data = {var: [0] * len(headers) for var in variables}
@@ -461,6 +465,7 @@ class LogMonitor(MonitorElement):
         border=False,
         width=MAX_MONITOR_WIDTH,
         header="Log Monitor",
+        enabled=True,
     ):
         """
         Initialize a LogMonitor.
@@ -473,7 +478,7 @@ class LogMonitor(MonitorElement):
             timestamp_significant_digits (int): Digits to truncate from the timestamp.
             header (str): Header for the log monitor.
         """
-        super().__init__(element_id, border=border)
+        super().__init__(element_id, border=border, width=width, enabled=enabled)
         self.max_logs = max_logs
         self.logs = []
         self.log_format = log_format
@@ -500,7 +505,6 @@ class LogMonitor(MonitorElement):
         content = "\n".join(formatted_logs)
         return self.add_border(content)
 
-
 # Indicator lamp class
 class IndicatorLamp(MonitorElement):
     """Class for rendering an indicator lamp."""
@@ -514,6 +518,7 @@ class IndicatorLamp(MonitorElement):
         on_color="green",
         off_color="red",
         width=MAX_MONITOR_WIDTH,
+        enabled=True,
     ):
         """
         Initialize an IndicatorLamp.
@@ -523,7 +528,7 @@ class IndicatorLamp(MonitorElement):
             on_color (str): Color when the lamp is on.
             off_color (str): Color when the lamp is off.
         """
-        super().__init__(element_id)
+        super().__init__(element_id, width=width, enabled=enabled)
         self.label = label
         self.on_color = on_color
         self.off_color = off_color
@@ -536,4 +541,22 @@ class IndicatorLamp(MonitorElement):
     def display(self):
         """Render the indicator lamp for display."""
         color = self.on_color if self.state else self.off_color
-        return f"{self.label}: \033[1;{color}m●\033[0m".ljust(self.width)
+
+        # Use ANSITextFormatter to apply color formatting
+        formatter = ANSITextFormatter(
+            text="●",
+            fg_color=color,  # Apply color
+            bold=True,  # Ensure visibility
+        )
+
+        formatted_lamp = formatter.format_text()
+        return f"{self.label}: {formatted_lamp}".ljust(MAX_MONITOR_WIDTH)
+
+    @property
+    def value(self):
+        return int(self.state)
+    
+
+if __name__ == "__main__":
+    # Example usage of the MonitorElement classes
+    monitor = MonitorGroup(monitor = "monitor")
