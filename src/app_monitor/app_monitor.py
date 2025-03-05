@@ -113,9 +113,10 @@ class TerminalManager(MonitorManager):
         self.buffer = []  # Clear the buffer for the new frame
 
         for element in self.elements:
-            self.buffer.append(
-                element.display()
-            )  # Add each element's display to the buffer
+            if getattr(element, "enabled", True):
+                self.buffer.append(
+                    element.display()
+                )  # Add each element's display to the buffer
 
     def update_screen(self):
         """Clear the terminal and write the buffer contents to the screen."""
