@@ -11,10 +11,9 @@
 import logging
 from logging.config import dictConfig
 import asyncio
-import math
 
-# Import the load_configs function
-from config_loader import load_configs
+from yaml import safe_load
+
 
 from app_monitor import (
     TerminalManager,
@@ -30,17 +29,13 @@ from app_monitor.elements_advanced import CoordinateTextElement
 from app_monitor.server import OrderedDecoder
 
 LOGGING_CONFIG_FILEPATH = "config/logging.yaml"
-APP_CONFIG_FILEPATH = "config/application.toml"
-
-# Load user configurations using the config_loader module
-configs = load_configs([APP_CONFIG_FILEPATH, LOGGING_CONFIG_FILEPATH])
-
+with open(LOGGING_CONFIG_FILEPATH, "r") as f:
+    logging_config = safe_load(f)
 # Configure logging using the specified logging configuration
-dictConfig(configs["logging"])
-
+dictConfig(logging_config)
 
 async def main():
-    logging.info(configs["application"])
+    logging.info("Starting application")
 
     # Create a MonitorManager instances
     manager = TerminalManager()
