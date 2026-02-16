@@ -55,7 +55,7 @@ class ZeroMQUpdateServer(UpdateServer):
 
 
 class SerialUpdateServer(UpdateServer):
-    """Class to manage updates via a serial connection asynchronously."""
+    """Class to manage updates via a serial or ethernet connection asynchronously."""
 
     def __init__(
         self,
@@ -69,14 +69,12 @@ class SerialUpdateServer(UpdateServer):
     ):
         super().__init__(monitor_manager)
         if serial_instance:
-            self.serial_connection = serial_instance
+            self.connection = serial_instance
         elif detect_devices:
-            self.serial_connection = self.detect_devices(baudrate=baudrate)
+            self.connection = self.detect_devices(baudrate=baudrate)
         else:
-            self.serial_connection = serial.Serial(port=port, baudrate=baudrate)
+            self.connection = serial.Serial(port=port, baudrate=baudrate)
 
-        self.port = self.serial_connection.port
-        self.baudrate = self.serial_connection.baudrate
         self.decoder = decoder
         self.validator = validator
 
@@ -108,16 +106,16 @@ class SerialUpdateServer(UpdateServer):
                     logger.error(f"Error connecting to {device}: {e}")
 
     async def start(self, frequency: float = 30):
-        """Start the serial reader asynchronously by polling the serial port."""
-        assert frequency > 0, "Frequency must be greater than 0."
-        assert self.serial_connection.is_open, "Serial connection is not open."
+        """Start the reader asynchronously by polling the connection."""
+        if frequency <= 0:
+            raise ValueError("Frequency must be greater than 0.")
+        if not self.connection.is_open:
+            raise RuntimeError("Connection is not open.")
 
         try:
             while True:
-                # If there is data on the serial port, then read it
-                if self.serial_connection.in_waiting:
-                    # Read available data on the serial port
-                    if data := self.serial_connection.readline():
+                if self.connection.in_waiting:
+                    if data := self.connection.readline():
                         if self.validator:
                             data = self.validator.validate(data)
                         if self.decoder and data:
@@ -127,20 +125,13 @@ class SerialUpdateServer(UpdateServer):
                 await asyncio.sleep(1 / frequency)
 
         except Exception as e:
-            logger.error(f"Error in serial connection: {e}")
+            logger.error(f"Error in connection: {e}")
         finally:
-            self.serial_connection.close()
-            logger.info("Serial connection closed.")
-
-    async def reconnect(self, delay=5):
-        """Attempt to reconnect to the serial port after a delay."""
-        self.serial_connection.close()
-        await asyncio.sleep(delay)  # Wait before attempting to reconnect
-        try:
-            self.serial_connection.open()
-            logger.info(f"Reconnected to serial port {self.port}.")
-        except Exception as e:
-            logger.error(f"Failed to reconnect: {e}")
+            if hasattr(self.connection, 'stop'):
+                self.connection.stop()
+            elif hasattr(self.connection, 'close'):
+                self.connection.close()
+            logger.info("Connection closed.")
 
 
 class Decoder:
