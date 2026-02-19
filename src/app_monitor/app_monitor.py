@@ -163,6 +163,14 @@ class SocketManager(MonitorManager):
         super().__init__()  # Initialize the parent MonitorManager
         self.socketio = socketio
         self.frequency = frequency
+        self._dirty = False
+        self._update_event = asyncio.Event()
+
+    def update(self, element_id, *args):
+        """Update an element and signal that new data is available."""
+        super().update(element_id, *args)
+        self._dirty = True
+        self._update_event.set()
 
     def to_json(self):
         """Convert all monitor elements to JSON format."""
@@ -179,11 +187,21 @@ class SocketManager(MonitorManager):
         return json.dumps(data)
 
     async def push_data(self):
-        """Asynchronously push data to all connected WebSocket clients at the specified frequency."""
+        """Push data to WebSocket clients when updates arrive, rate-limited by frequency."""
+        min_interval = 1 / self.frequency
         while True:
-            data = self.to_json()  # Get data in JSON format
-            self.socketio.emit("update", data)  # Push data to WebSocket clients
-            await asyncio.sleep(1 / self.frequency)  # Control push frequency
+            # Wait until new data arrives or timeout at max interval
+            try:
+                await asyncio.wait_for(self._update_event.wait(), timeout=min_interval)
+            except asyncio.TimeoutError:
+                pass
+            if self._dirty:
+                self._dirty = False
+                self._update_event.clear()
+                data = self.to_json()
+                self.socketio.emit("update", data)
+            else:
+                self._update_event.clear()
 
     def set_frequency(self, frequency):
         """Set the frequency at which data is pushed to clients."""
